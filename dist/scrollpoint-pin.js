@@ -1,7 +1,7 @@
 /*!
  * angular-ui-scrollpoint-pin
  * https://github.com/TechNaturally/ui-scrollpoint-pin
- * Version: 2.0.0 - 2015-12-21T21:35:55.484Z
+ * Version: 1.0.0 - 2015-12-21T21:37:32.735Z
  * License: MIT
  */
 
