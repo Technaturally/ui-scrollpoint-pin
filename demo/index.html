@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="demo">
+    <head>
+        <meta charset="utf-8">
+        <title>AngularJS ui-scrollpoint</title>
+
+        <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.1/angular.js"></script>
+        <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.css">
+
+        <link rel="stylesheet" href="style.css">
+
+        <!-- ui-scrollpoint files -->
+        <script src="../bower_components/angular-ui-scrollpoint/dist/scrollpoint.js"></script>
+        <script src="../dist/scrollpoint-pin.js"></script>
+        <script>
+            var app = angular.module('demo', ['ui.scrollpoint']);
+            app.controller( 'scrollpointTest', function($scope){
+                $scope.trackView = function(distance, element, edge){
+                    var id = element.attr('id');
+                    if($scope.views.indexOf(id) == -1){
+                        $scope.views.push(id);
+                        $scope.views.sort();
+                    }
+                    if(distance >= 0){
+                        $scope.inView[id] = false;
+                        $scope.outView[id] = edge;
+                        element.removeClass('in-view');
+                    }
+                    else{
+                        $scope.inView[id] = true;
+                        $scope.outView[id] = undefined;
+                        element.addClass('in-view');
+                    }
+                    $scope.$apply();
+                };
+
+                $scope.reportScroll = function(distance, element, edge){
+                    // distance >= 0 means scrollpoint is hit & applied
+                    // distance < 0 means scrollpoint is hit & unapplied
+                    // undefined edge means initialized unhit / unapplied (-distance is distance from edge)
+                    console.log(edge+' hit @ '+distance);
+                };
+
+                $scope.scrollpoint = undefined;
+                $scope.views = [];
+                $scope.inView = {};
+                $scope.outView = {};
+                $scope.topSpacer = false;
+                $scope.$watch('topSpacer', function(){
+                    $scope.$broadcast('scrollpointShouldReset');
+                });
+                $scope.$broadcast('scrollpointShouldReset');
+            });
+        </script>
+        <style>
+            .demo {
+                background-color: #EEF;
+            }
+            .demo.ui-scrollpoint {
+                background-color: #EFE;
+            }
+            .demo.my-scrollpoint {
+                background-color: #DFE;
+            }
+            .demo.another-scrollpoint {
+                border: 2px solid #3D3;
+            }  
+            .demo.in-view .id {
+                font-weight: bold;
+            }
+        </style>
+    </head>
+
+    <body class="container">
+        <section id="scrollpoint" ng-controller="scrollpointTest">
+            <h1>Scrollpoints</h1>
+
+            <div class="top-bar">
+                <div class="input">
+                    <label for="scrollpointValue">Scrollpoint:</label> <input type="text" ng-model="scrollpoint" id="scrollpointValue" placeholder="absolute, +, -, or %" />
+                </div>
+                <ul class="view-trackers">
+                    <li ng-repeat="view in views" ng-class="{in: inView[view]}">
+                        <strong>{{view}}:</strong> {{inView[view]}} <span ng-show="outView[view]">({{outView[view]}})</span>
+                    </li>
+                </ul>
+            </div>
+
+            
+
+            <div class="spacerToggle">
+                <label for="windowTopSpacer">Show top spacer:</label> <input type="checkbox" ng-model="topSpacer" id="windowTopSpacer" />
+            </div>
+            <div class="spacer" ng-show="topSpacer"></div>
+
+            <div class="demo" ui-scrollpoint>
+                ui-scrollpoint
+            </div>
+
+            <div class="demo" ui-scrollpoint="25">
+                ui-scrollpoint="25"
+            </div>
+
+            <div class="demo" ui-scrollpoint="25%">
+                ui-scrollpoint="25%"
+            </div>
+
+            <div class="demo" ui-scrollpoint="-25">
+                ui-scrollpoint="-25"
+            </div>
+
+            <div class="demo" ui-scrollpoint="+25">
+                ui-scrollpoint="+25"
+            </div>
+
+            <div class="demo" ui-scrollpoint ui-scrollpoint-edge="view" ui-scrollpoint-action="trackView" id="viewtrack-1">
+                ui-scrollpoint<br/>
+                ui-scrollpoint-edge="view"<br/>
+                ui-scrollpoint-action="trackView"<br/>
+                <span class="id">id="viewtrack-1"</span>
+            </div>
+
+            <div class="demo" ui-scrollpoint="{{scrollpoint}}" ui-scrollpoint-action="reportScroll">
+                ui-scrollpoint="{{scrollpoint}}"<br/>
+                ui-scrollpoint-action="reportScroll"
+            </div>
+
+            <div class="demo" ui-scrollpoint="{{scrollpoint}}" ui-scrollpoint-class="my-scrollpoint">
+                ui-scrollpoint="{{scrollpoint}}"<br/>
+                ui-scrollpoint-class="my-scrollpoint"
+            </div>
+
+            <div class="demo" ui-scrollpoint="{{scrollpoint}}" ui-scrollpoint-class="ui-scrollpoint another-scrollpoint">
+                ui-scrollpoint="{{scrollpoint}}"<br/>
+                ui-scrollpoint-class="ui-scrollpoint another-scrollpoint"
+            </div>
+
+            <br style="clear:both;"/>
+
+            <div class="scrollpoint-target" ui-scrollpoint-target>
+                <h2>Scrollpoint Target</h2>
+                
+                <div class="demo" ui-scrollpoint>
+                    ui-scrollpoint
+                </div>
+
+                <div class="demo" ui-scrollpoint="25">
+                    ui-scrollpoint="25"
+                </div>
+
+                <div class="demo" ui-scrollpoint="25%">
+                    ui-scrollpoint="25%"
+                </div>
+
+                <div class="demo" ui-scrollpoint="-25">
+                    ui-scrollpoint="-25"
+                </div>
+
+                <div class="demo" ui-scrollpoint="+25">
+                    ui-scrollpoint="+25"
+                </div>
+
+                <br style="clear:both;"/>
+                <div class="spacer small"></div>
+
+                <div class="demo" ui-scrollpoint ui-scrollpoint-edge="bottom">
+                    ui-scrollpoint<br/>
+                    ui-scrollpoint-edge="bottom"
+                </div>
+
+                <div class="demo" ui-scrollpoint="25" ui-scrollpoint-edge="bottom">
+                    ui-scrollpoint="25"<br/>
+                    ui-scrollpoint-edge="bottom"
+                </div>
+
+                <div class="demo" ui-scrollpoint="25%" ui-scrollpoint-edge="bottom">
+                    ui-scrollpoint="25%"<br/>
+                    ui-scrollpoint-edge="bottom"
+                </div>
+
+                <div class="demo" ui-scrollpoint="-25" ui-scrollpoint-edge="bottom">
+                    ui-scrollpoint="-25"<br/>
+                    ui-scrollpoint-edge="bottom"
+                </div>
+
+                <div class="demo" ui-scrollpoint="+25" ui-scrollpoint-edge="bottom">
+                    ui-scrollpoint="+25"<br/>
+                    ui-scrollpoint-edge="bottom"
+                </div>
+
+                <div class="demo" ui-scrollpoint ui-scrollpoint-edge="view" ui-scrollpoint-action="trackView" id="viewtrack-2">
+                    ui-scrollpoint<br/>
+                    ui-scrollpoint-edge="view"<br/>
+                    ui-scrollpoint-action="trackView"<br/>
+                    <span class="id">id="viewtrack-2"</span>
+                </div>
+
+                <br style="clear:both;"/>
+                <div class="spacer small"></div>
+            </div>
+
+
+            <div class="demo" ui-scrollpoint ui-scrollpoint-edge="bottom">
+                ui-scrollpoint<br/>
+                ui-scrollpoint-edge="bottom"
+            </div>
+
+            <div class="demo" ui-scrollpoint="25" ui-scrollpoint-edge="bottom">
+                ui-scrollpoint="25"<br/>
+                ui-scrollpoint-edge="bottom"
+            </div>
+
+            <div class="demo" ui-scrollpoint="25%" ui-scrollpoint-edge="bottom">
+                ui-scrollpoint="25%"<br/>
+                ui-scrollpoint-edge="bottom"
+            </div>
+
+            <div class="demo" ui-scrollpoint="-25" ui-scrollpoint-edge="bottom">
+                ui-scrollpoint="-25"<br/>
+                ui-scrollpoint-edge="bottom"
+            </div>
+
+            <div class="demo" ui-scrollpoint="+25" ui-scrollpoint-edge="bottom" ui-scrollpoint-action="reportScroll">
+                ui-scrollpoint="+25"<br/>
+                ui-scrollpoint-edge="bottom"<br/>
+                ui-scrollpoint-action="reportScroll"
+            </div>
+
+            <br style="clear:both;"/>
+            <div class="spacer small"></div>
+        </section>
+    </body>
+</html>
