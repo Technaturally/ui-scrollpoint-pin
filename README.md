@@ -1,10 +1,11 @@
 # ui-scrollpoint-pin
 
-Add a 'ui-scrollpoint' class to elements when the page scrolls past them.
+Pins `ui-scrollpoint` elements to the target edge.
 
 ## Requirements
 
 - AngularJS
+- angular-ui-scrollpoint
 
 ## Usage
 
@@ -27,6 +28,12 @@ Add the specific module to your dependencies:
 
 ```javascript
 angular.module('myApp', ['ui.scrollpoint.pin', ...])
+```
+
+Add directive to your `ui-scrollpoint` element:
+
+```html
+<div ui-scrollpoint ui-scrollpoint-pin></div>
 ```
 
 ## Development
