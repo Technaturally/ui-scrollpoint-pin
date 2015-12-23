@@ -17,12 +17,9 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     element.css('top', (scrollOffset-offset.y)+'px');
                 }
             }
-
-            // create a scrollpoint action that pins the element
-            uiScrollpoint.addAction(function(distance, element, edge){
-                if(distance >= 0 && !placeholder){
-                    // PIN IT
-
+            function pin(edge, distance){
+                if(!placeholder){
+                    var element = elm;
                     // calculate the offset for its absolute positioning
                     offset.x = element[0].offsetLeft;
                     offset.y = uiScrollpoint.getScrollOffset() - element[0].offsetTop - distance * ((edge == 'bottom')?-1.0:1.0);
@@ -62,9 +59,10 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     uiScrollpoint.$target.on('scroll', repositionPinned);
                     repositionPinned();
                 }
-                else if(distance < 0 && placeholder){
-                    // UNPIN IT
-
+            }
+            function unpin(){
+                if(placeholder){
+                    var element = elm;
                     // stop adjusting absolute position when target scrolls
                     uiScrollpoint.$target.off('scroll', repositionPinned);
 
@@ -83,6 +81,23 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     placeholder = undefined;
 
                     uiScrollpoint.cachePosition();
+                }
+            }
+
+            attrs.$observe('uiScrollpointEnabled', function(scrollpointEnabled){
+                scrollpointEnabled = scope.$eval(scrollpointEnabled);
+                if(!scrollpointEnabled){
+                    unpin();
+                }
+            });
+
+            // create a scrollpoint action that pins the element
+            uiScrollpoint.addAction(function(distance, element, edge){
+                if(distance >= 0 && !placeholder){
+                    pin(edge, distance);
+                }
+                else if(distance < 0 && placeholder){
+                    unpin();
                 }
             });
         }
