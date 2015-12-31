@@ -50,6 +50,10 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     origCss.position = element[0].style.position; //element.css('position');
                     origCss.top = element[0].style.top; //element.css('top');
                     origCss.left = element[0].style.left; //element.css('left');
+                    origCss.width = element[0].style.width;
+
+                    // lock the width at whatever it is before pinning (since absolute positioning could take it out of context)
+                    element.css('width', element[0].offsetWidth+'px');
 
                     // pin the element
                     element.addClass('pinned');
