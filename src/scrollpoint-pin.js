@@ -3,51 +3,93 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
 
     var Pin = {
         pinned: function(pin, edge){
+            Pin.Stack.pinned(pin, edge);
         },
         unpinned: function(pin, edge){
+            Pin.Stack.unpinned(pin, edge);
         },
 
         Stack: {
-            onWindow: [],
+            onWindow: {
+                items: [],
+                stacked: {}
+            },
+            pinned: function(pin, edge){
+                if(pin.stack){
+                    if(pin.stack.items){
+                        var stackIdx = pin.stack.items.indexOf(pin);
+                        //console.log('Stack PINNED ON ['+((pin.stack==this.onWindow)?'window':'target')+'] @ ('+stackIdx+' / '+(pin.stack.items.length-1)+') @ '+edge);
+                    }
+                    if(pin.stack.stacked){
+                        if(angular.isUndefined(pin.stack.stacked[edge])){
+                            pin.stack.stacked[edge] = [];
+                        }
+                        var stackIdx = pin.stack.stacked[edge].indexOf(pin);
+                        if(stackIdx == -1){
+                            pin.stack.stacked[edge].push(pin);
+                            console.log('Stack PINNED ON ['+((pin.stack==this.onWindow)?'window':'target')+']['+edge+'] @ '+(pin.stack.stacked[edge].length-1));
+                        }
+                    }
+                }
+            },
+            unpinned: function(pin, edge){
+                if(pin.stack){
+                    if(pin.stack.items){
+                        var stackIdx = pin.stack.items.indexOf(pin);
+                        //console.log('Stack UNPINNED FROM ['+((pin.stack==this.onWindow)?'window':'target')+'] @ ('+stackIdx+' / '+(pin.stack.items.length-1)+') @ '+edge);
+                    }
+                    if(pin.stack.stacked && pin.stack.stacked[edge]){
+                        var stackIdx = pin.stack.stacked[edge].indexOf(pin);
+                        if(stackIdx != -1){
+                            pin.stack.stacked[edge].splice(stackIdx, 1);
+                            console.log('Stack UNPINNED FROM ['+((pin.stack==this.onWindow)?'window':'target')+']['+edge+'] @ '+stackIdx);
+                        }
+                    }
+                }
+            },
             register: function(pin){
                 var stack;
-                if(pin.$uiScrollpoint && pin.$uiScrollpoint.hasTarget){
+                if(pin.$uiScrollpoint && pin.$uiScrollpoint.hasTarget && pin.$uiScrollpoint.$target){
                     if(angular.isUndefined(pin.$uiScrollpoint.$target.stack)){
-                        pin.$uiScrollpoint.$target.stack = [];
+                        pin.$uiScrollpoint.$target.stack = {
+                            items: [],
+                            stacked: {}
+                        };
                     }
                     stack = pin.$uiScrollpoint.$target.stack;
-                    console.log('REGISTER STACK ON TARGET');
                 }
                 else{
                     stack = this.onWindow;
-                    console.log('REGISTER STACK ON WINDOW');
                 }
-                
-                if(stack && stack.indexOf(pin) == -1){
-                    stack.push(pin);
+                // assign the stack to the pin
+                pin.stack = stack;
+                if(pin.stack){
+                    if(pin.stack.items){
+                        if(pin.stack.items.indexOf(pin) == -1){
+                            // append the pin to the stack
+                            pin.stack.items.push(pin);
+                            console.log('REGISTERED on ['+((pin.stack==this.onWindow)?'window':'target')+'] @ '+(pin.stack.items.length-1));
+                        }
+                    }
                 }
             },
             unregister: function(pin){
-                if(pin.$uiScrollpoint && pin.$uiScrollpoint.hasTarget && pin.$uiScrollpoint.$target.stack){
-                    var stackIdx = pin.$uiScrollpoint.$target.indexOf(pin);
-                    if(stackIdx != -1){
-                        console.log('UNREGISTER STACK ON TARGET');
-                        pin.$uiScrollpoint.$target = pin.$uiScrollpoint.$target.splice(stackIdx, 1);
+                if(pin.stack){
+                    if(pin.stack.items){
+                        var stackIdx = pin.stack.items.indexOf(pin);
+                        if(stackIdx != -1){
+                            pin.stack.items.splice(stackIdx, 1);
+                            console.log('UNREGISTER FROM ['+((pin.stack==this.onWindow)?'window':'target')+'] @ '+stackIdx);
+                        }
                     }
-                }
-                else{
-                    var stackIdx = this.onWindow.indexOf(pin);
-                    if(stackIdx != -1){
-                        console.log('UNREGISTER STACK ON WINDOW');
-                        this.onWindow = this.onWindow.splice(stackIdx, 1);
-                    }
+                    pin.stack = undefined;
                 }
             }
         }
     };
     return Pin;
 })
-.directive('uiScrollpointPin', ['ui.scrollpoint.Pin', function(Pin){
+.directive('uiScrollpointPin', ['ui.scrollpoint.Pin', '$timeout', function(Pin, $timeout){
     return {
         restrict: 'A',
         priority: 100,
@@ -129,7 +171,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     self.repositionPinned();
 
                     // notify the Pin service that it is pinned
-                    Pin.pinned(this.$uiScrollpoint, edge);
+                    Pin.pinned(this, edge);
                 }
             };
 
@@ -161,7 +203,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     this.$uiScrollpoint.cachePosition();
 
                     // notify the Pin service that it is unpinned
-                    Pin.unpinned(this.$uiScrollpoint, edge);
+                    Pin.unpinned(this, edge);
                 }
             };
 
@@ -170,6 +212,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
             var uiScrollpoint = Ctrl[0];
             var uiScrollpointPin = Ctrl[1];
 
+            // setup the controller
             uiScrollpointPin.setElement(elm);
             uiScrollpointPin.setScrollpoint(uiScrollpoint);
 
@@ -184,20 +227,35 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                 else{
                     uiScrollpointPinOverlay = scope.$eval(uiScrollpointPinOverlay);
                 }
+
                 if(!uiScrollpointPinOverlay){
+                    // register to stack if it is not overlaying
                     Pin.Stack.register(uiScrollpointPin);
                 }
                 else{
+                    // unregister from stack if it is overlaying
                     Pin.Stack.unregister(uiScrollpointPin);
                 }
             });
 
-            // observe the ui-scrollpoint-enabled attribute
+            attrs.$observe('uiScrollpointAbsolute', function(scrollpointAbsolute){
+                // absolute could change the target, so unregister from its existing stack
+                Pin.Stack.unregister(uiScrollpointPin);
+
+                // on next digest cycle, register on whatever its new stack should be
+                $timeout(function(){
+                    Pin.Stack.register(uiScrollpointPin);
+                })
+            });
+
             attrs.$observe('uiScrollpointEnabled', function(scrollpointEnabled){
                 scrollpointEnabled = scope.$eval(scrollpointEnabled);
                 if(!scrollpointEnabled){
                     // unpin the element if scrollpoint is disabled
                     uiScrollpointPin.unpin();
+
+                    // unregister from its stack
+                    Pin.Stack.unregister(uiScrollpointPin);
                 }
             });
 
