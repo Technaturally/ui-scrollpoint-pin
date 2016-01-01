@@ -5,11 +5,11 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
         require: ['uiScrollpoint', 'uiScrollpointPin'],
         controller: [function(){
             var self = this;
-            this.$element;
-            this.$placeholder;
-            this.$uiScrollpoint;
+            this.$element = undefined;
+            this.$placeholder = undefined;
+            this.$uiScrollpoint = undefined;
 
-            this.edge;
+            this.edge = undefined;
             this.offset = {};
 
             var origCss = {};
