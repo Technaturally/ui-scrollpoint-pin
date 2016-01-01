@@ -16,10 +16,6 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
             },
             pinned: function(pin, edge){
                 if(pin.stack){
-                    if(pin.stack.items){
-                        var stackIdx = pin.stack.items.indexOf(pin);
-                        //console.log('Stack PINNED ON ['+((pin.stack==this.onWindow)?'window':'target')+'] @ ('+stackIdx+' / '+(pin.stack.items.length-1)+') @ '+edge);
-                    }
                     if(pin.stack.stacked){
                         if(angular.isUndefined(pin.stack.stacked[edge])){
                             pin.stack.stacked[edge] = [];
@@ -28,21 +24,32 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                         if(stackIdx == -1){
                             pin.stack.stacked[edge].push(pin);
                             console.log('Stack PINNED ON ['+((pin.stack==this.onWindow)?'window':'target')+']['+edge+'] @ '+(pin.stack.stacked[edge].length-1));
+
+                            if(pin.stack.items){
+                                var stackIdx = pin.stack.items.indexOf(pin);
+                                // TODO: adjust offset (attr.uiScrollpoint) of all items whose position is below (edge==top) or above (edge==bottom)
+
+                                //console.log('Stack PINNED ON ['+((pin.stack==this.onWindow)?'window':'target')+'] @ ('+stackIdx+' / '+(pin.stack.items.length-1)+') @ '+edge);
+                            }
                         }
                     }
                 }
             },
             unpinned: function(pin, edge){
                 if(pin.stack){
-                    if(pin.stack.items){
-                        var stackIdx = pin.stack.items.indexOf(pin);
-                        //console.log('Stack UNPINNED FROM ['+((pin.stack==this.onWindow)?'window':'target')+'] @ ('+stackIdx+' / '+(pin.stack.items.length-1)+') @ '+edge);
-                    }
+                    
                     if(pin.stack.stacked && pin.stack.stacked[edge]){
                         var stackIdx = pin.stack.stacked[edge].indexOf(pin);
                         if(stackIdx != -1){
                             pin.stack.stacked[edge].splice(stackIdx, 1);
                             console.log('Stack UNPINNED FROM ['+((pin.stack==this.onWindow)?'window':'target')+']['+edge+'] @ '+stackIdx);
+
+                            if(pin.stack.items){
+                                var stackIdx = pin.stack.items.indexOf(pin);
+                                // TODO: adjust offset (attr.uiScrollpoint) of all items whose position is below (edge==top) or above (edge==bottom)
+
+                                //console.log('Stack UNPINNED FROM ['+((pin.stack==this.onWindow)?'window':'target')+'] @ ('+stackIdx+' / '+(pin.stack.items.length-1)+') @ '+edge);
+                            }
                         }
                     }
                 }
