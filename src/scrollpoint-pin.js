@@ -1,9 +1,18 @@
 angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
+.factory('ui.scrollpoint.Pin', function(){
+    var Pin = {
+        pinned: function(ScrollPoint, edge){
+        },
+        unpinned: function(ScrollPoint, edge){
+        }
+    };
+    return Pin;
+})
 .directive('uiScrollpointPin', [function(){
     return {
         restrict: 'A',
         require: ['uiScrollpoint', 'uiScrollpointPin'],
-        controller: [function(){
+        controller: ['ui.scrollpoint.Pin', function(Pin){
             var self = this;
             this.$element = undefined;
             this.$placeholder = undefined;
@@ -78,6 +87,9 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     // adjust the element's absolute top whenever target scrolls
                     this.$uiScrollpoint.$target.on('scroll', self.repositionPinned);
                     self.repositionPinned();
+
+                    // notify the Pin service that it is pinned
+                    Pin.pinned(this.$uiScrollpoint, edge);
                 }
             };
 
@@ -107,6 +119,9 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     this.$placeholder = undefined;
 
                     this.$uiScrollpoint.cachePosition();
+
+                    // notify the Pin service that it is unpinned
+                    Pin.unpinned(this.$uiScrollpoint, edge);
                 }
             };
 
