@@ -16,14 +16,13 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
             for(var i in pin.stack.stacked[edge]){
                 var cPin = pin.stack.stacked[edge][i];
                 if(shouldStack(pin, edge, cPin.getOriginalBounds())){
-                    var cBounds = cPin.getOriginalBounds();
-                    var cShift = cPin.edge ? getOrigShift(cPin, edge, cPin.edge.element) : 0;
-                    if(edge == 'top' && (angular.isUndefined(offset) || (cBounds.bottom-cShift) > offset)){
-                        offset = cBounds.bottom-cShift;
+                    var cBounds = cPin.getBounds();
+                    if(edge == 'top' && (angular.isUndefined(offset) || cBounds.bottom > offset)){
+                        offset = cBounds.bottom;
                         maxStacked = cPin;
                     }
-                    else if(edge == 'bottom' && (angular.isUndefined(offset) || (cBounds.top-cShift) < offset)){
-                        offset = cBounds.top-cShift;
+                    else if(edge == 'bottom' && (angular.isUndefined(offset) || cBounds.top < offset)){
+                        offset = cBounds.top;
                         maxStacked = cPin;
                     }
                 }
@@ -41,15 +40,12 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
         }
         if(pinIdx != -1 && edges){
             var edge;
-
             if(edges[scroll_edge] && edges[scroll_edge][elem_edge]){
                 edge = edges[scroll_edge][elem_edge];
             }
-
             if(!edge && edges['#default']){
                 edge = edges['#default'];
             }
-
             if(edge){
                 return edge.shift;
             }
@@ -73,7 +69,10 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
 
                 // get its offset
                 var maxStackedBounds = maxStacked.getBounds();
-                maxOffset = (edge=='top') ? maxStackedBounds.bottom : maxStackedBounds.top;
+                maxOffset = maxStackedBounds.bottom;
+                if(edge == 'bottom'){
+                    maxOffset = maxStackedBounds.top - pin.$uiScrollpoint.getTargetHeight();
+                }                
             }
 
             // loop through the defined edges to build the new set of edges
