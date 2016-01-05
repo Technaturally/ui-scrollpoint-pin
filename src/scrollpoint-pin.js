@@ -4,7 +4,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
     // checks if a pin should stack on an edge against the given bounds
     function shouldStack(pin, edge, bounds){
         var pinBounds = pin.getOriginalBounds();
-        if( ( (pinBounds.left >= bounds.left && pinBounds.left <= bounds.right) || (pinBounds.right >= bounds.left && pinBounds.right <= bounds.right) ) && ( (edge == 'top' && pinBounds.top >= bounds.bottom) || (edge == 'bottom' && pinBounds.bottom <= bounds.top) ) ){
+        if( ( (pinBounds.left >= bounds.left && pinBounds.left <= bounds.right) || (pinBounds.right >= bounds.left && pinBounds.right <= bounds.right) || (bounds.left >= pinBounds.left && bounds.left <= pinBounds.right) || (bounds.right >= pinBounds.left && bounds.right <= pinBounds.right) ) && ( (edge == 'top' && pinBounds.top >= bounds.bottom) || (edge == 'bottom' && pinBounds.bottom <= bounds.top) ) ){
             return true;
         }
         return false;
@@ -92,6 +92,10 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
 
                         // calculate the new shiftfor that element
                         var newShift = -maxOffset + getOrigShift(pin, edge, elem_edge);
+                        if(pin.$uiScrollpoint.hasTarget){
+                            var targetBounds = pin.$uiScrollpoint.$target[0].getBoundingClientRect();
+                            newShift += targetBounds.top;
+                        }
                         newEdges[edge][elem_edge] = ((newShift >= 0)?'+':'')+newShift;
 
                         if(maxStackedIdx != -1){
