@@ -1,9 +1,107 @@
 angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
 .factory('ui.scrollpoint.Pin', ['$timeout', function($timeout){
+    function hide(pin){
+        $timeout(function(){
+            if(pin.$element && pin.isPinned() && (!pin.group || pin != pin.group.active)){
+                if(angular.isFunction(pin.$element.hide)){
+                    pin.$element.hide();
+                }
+                else{
+                    pin.$element.css('display', 'none');
+                    pin.$element.css('visibility', 'hidden');
+                }
+            }
+        });
+    }
+    function show(pin){
+        if(pin.$element){
+            if(angular.isFunction(pin.$element.show)){
+                pin.$element.show();
+            }
+            else{
+                pin.$element.css('display', null);
+                pin.$element.css('visibility', null);
+            }
+        }
+    }
+
     var Pin = {
         pinned: function(pin, edge){
+            Pin.Group.pinned(pin, edge);
         },
         unpinned: function(pin, edge){
+            Pin.Group.unpinned(pin, edge);
+        },
+        Group: {
+            group: {},
+            newGroup: function(groupId){
+                return {
+                    id: groupId,
+                    pins: [],
+                    active: undefined,
+                    setActive: function(pin, hideOld, showNew){
+                        if(!pin || !pin.isPinned()){
+                            pin = undefined;
+                        }
+
+                        if(angular.isUndefined(hideOld)){
+                            hideOld = true;
+                        }
+                        if(angular.isUndefined(showNew)){
+                            showNew = true;
+                        }
+
+                        if(hideOld && this.active && this.active != pin){
+                            hide(this.active);
+                        }
+
+                        this.active = pin;
+
+                        if(showNew && this.active){
+                            show(this.active);
+                        }
+                    }
+                };
+            },
+            pinned: function(pin, edge){
+                if(pin.group){
+                    pin.group.setActive(pin);
+                }
+            },
+            unpinned: function(pin, edge){
+                if(pin.group){
+                    show(pin);
+                    if(pin.group.active == pin){
+                        var pinIdx = pin.group.pins.indexOf(pin);
+                        if(pinIdx > 0 && pin.group.pins.length){
+                            pin.group.setActive(pin.group.pins[pinIdx-1], false, true);
+                        }
+                        else{
+                            pin.group.setActive(undefined, false, false);
+                        }
+                    }
+                }
+            },
+            register: function(groupId, pin){
+                if(angular.isUndefined(this.group[groupId])){
+                    this.group[groupId] = this.newGroup(groupId);
+                }
+                if(this.group[groupId].pins.indexOf(pin) == -1){
+                    this.group[groupId].pins.push(pin);
+                    pin.group = this.group[groupId];
+                }
+            },
+            unregister: function(groupId, pin){
+                if(angular.isDefined(this.group[groupId])){
+                    var pinIdx = this.group[groupId].pins.indexOf(pin);
+                    if(pinIdx != -1){
+                        this.group[groupId].pins.splice(pinIdx, 1);
+                    }
+                    if(pin.group == this.group[groupId]){
+                        pin.group = undefined;
+                    }
+                }
+            }
         }
     };
     return Pin;
@@ -164,6 +262,19 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                 scrollpointEnabled = scope.$eval(scrollpointEnabled);
                 if(!scrollpointEnabled){
                     uiScrollpointPin.unpin();
+                }
+            });
+
+            attrs.$observe('uiScrollpointPinGroup', function(pinGroup){
+                var groupId = pinGroup.replace(/[^a-zA-Z0-9-]/g, '-');
+                var groupClass = 'pin-grouped pin-group-'+groupId;
+                if(pinGroup){
+                    Pin.Group.register(groupId, uiScrollpointPin);
+                    elm.addClass(groupClass);
+                }
+                else{
+                    Pin.Group.unregister(groupId, uiScrollpointPin);
+                    elm.removeClass(groupClass);
                 }
             });
 
