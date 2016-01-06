@@ -40,7 +40,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
         }
         if(pinIdx != -1 && edges){
             var edge;
-            if(edges[scroll_edge] && edges[scroll_edge][elem_edge]){
+            if(edges[scroll_edge] && edges[scroll_edge][elem_edge] && edges[scroll_edge][elem_edge] !== true){
                 edge = edges[scroll_edge][elem_edge];
             }
             if(!edge && edges['#default']){
@@ -87,7 +87,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     var pinEdge = pin.$uiScrollpoint.getEdge(edge, elem_edge);
                     // only shift non-absolute entries
                     if(pinEdge && !pinEdge.absolute){
-                        // calculate the new shiftfor that element
+                        // calculate the new shift for that element
                         var newShift = -maxOffset + getOrigShift(pin, edge, elem_edge);
                         if(pin.$uiScrollpoint.hasTarget){
                             var targetBounds = pin.$uiScrollpoint.$target[0].getBoundingClientRect();
@@ -108,7 +108,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
             }
             else if(angular.isDefined(pin.stack.stackShifts[pinIdx]) && angular.isDefined(pin.stack.stackShifts[pinIdx][edge])){
                 pin.stack.stackShifts[pinIdx][edge] = undefined;
-                newEdges[edge] = pin.stack.origEdges[pinIdx] ? pin.stack.origEdges[pinIdx][edge] : null;
+                newEdges[edge] = pin.stack.origEdges[pinIdx] ? pin.stack.origEdges[pinIdx][edge] : true;
             }
 
             // were newEdges configured?
@@ -124,6 +124,12 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                         newEdges[check_edge] = {};
                         for(var check_elem_edge in otherEdges[check_edge]){
                             var otherEdge = otherEdges[check_edge][check_elem_edge];
+                            if(!otherEdge){
+                                //otherEdge = pin.$uiScrollpoint.default_edge;
+                                otherEdge = true;
+                            }
+
+                            // transpose the otherEdge defintion into the ui-scrollpoint-edge attribute format
                             if(angular.isObject(otherEdge)){
                                 if(otherEdge.absolute){
                                     newEdges[check_edge][check_elem_edge] = otherEdge.shift + (otherEdge.percent?'%':'');
