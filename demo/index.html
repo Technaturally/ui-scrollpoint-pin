@@ -93,7 +93,6 @@
         <style>
             .demo {
                 background-color: #EEF;
-                opacity: 0.75;
             }
             div.demo.top {
                 border-top-width: 3px;
@@ -140,9 +139,14 @@
             }
             .demo.pin-overlap,
             .demo.pin-overlap.ui-scrollpoint.pinned {
-                z-index: 150;
                 position: relative;
+                z-index: 150;
                 opacity: 0.75;
+            }
+
+            .demo.pin-grouped {
+                position: relative;
+                z-index: 150;
             }
 
             .scrollpoint-target .demo.ui-scrollpoint {
@@ -232,17 +236,36 @@
 
             <div class="spacer medium" ng-show="topSpacer"></div>
 
-            <div class="demo top" ui-scrollpoint="25" ui-scrollpoint-pin></div>
+            <div class="demo wide top item1" style="width: 500px;" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-group="group1">Item #1</div>
 
-            <div class="demo wide top" ui-scrollpoint ui-scrollpoint-pin></div>
+            <br style="clear:both;"/>
+
+            <div class="demo wide top item2" style="width: 400px;" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-group="group1">Item #2</div>
+
+            <br style="clear:both;"/>
+
+            <div class="demo wide top item3" style="width: 300px;" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-group="group1">Item #3</div>
+
+
+            <!--div class="demo top" ui-scrollpoint="25" ui-scrollpoint-pin></div>
+
+            <div class="demo wide top" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-group="group1">Item #1</div>
 
             <div class="demo top" ui-scrollpoint="-10" ui-scrollpoint-pin></div>
 
             <br style="clear:both;"/>
 
-            <div class="demo top" ui-scrollpoint="+10" ui-scrollpoint-pin></div>
+            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin></div>
 
-            <div class="demo top" ui-scrollpoint="-5" ui-scrollpoint-pin></div>
+            <div class="demo wide top" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-group="group1">Item #2</div>
+
+            <br style="clear:both;"/>
+
+            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin></div>
+
+            <div class="demo wide top" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-group="group1">Item #3</div-->
+
+            <!--div class="demo top" ui-scrollpoint="-5" ui-scrollpoint-pin></div>
 
             <div class="demo top" ui-scrollpoint ui-scrollpoint-pin></div>
 
@@ -260,7 +283,7 @@
 
             <div class="demo top" ui-scrollpoint ui-scrollpoint-pin></div>
 
-            <div class="demo top" ui-scrollpoint="+10" ui-scrollpoint-pin></div>
+            <div class="demo top" ui-scrollpoint="+10" ui-scrollpoint-pin></div-->
 
             <br style="clear:both;"/>
 
