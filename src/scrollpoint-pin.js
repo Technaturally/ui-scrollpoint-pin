@@ -1,10 +1,21 @@
 angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
-.directive('uiScrollpointPin', [function(){
+.factory('ui.scrollpoint.Pin', ['$timeout', function($timeout){
+    var Pin = {
+        pinned: function(pin, edge){
+        },
+        unpinned: function(pin, edge){
+        }
+    };
+    return Pin;
+}])
+.directive('uiScrollpointPin', ['ui.scrollpoint.Pin', function(Pin){
     return {
         restrict: 'A',
+        priority: 100,
         require: ['uiScrollpoint', 'uiScrollpointPin'],
-        controller: [function(){
+        controller: ['$scope', 'ui.scrollpoint.Pin', '$timeout', function($scope, Pin, $timeout){
             var self = this;
+            this.$attrs = undefined;
             this.$element = undefined;
             this.$placeholder = undefined;
             this.$uiScrollpoint = undefined;
@@ -23,18 +34,39 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                 }
             };
 
+            this.setAttrs = function(attrs){
+                this.$attrs = attrs;
+            };
             this.setElement = function(element){
                 this.$element = element;
             };
             this.setScrollpoint = function(uiScrollpoint){
                 this.$uiScrollpoint = uiScrollpoint;
             };
+            this.getBounds = function(){
+                if(this.$element){
+                    return this.$element[0].getBoundingClientRect();
+                }
+                return null;
+            };
+            this.getOriginalBounds = function(){
+                if(this.$placeholder){
+                    return this.$placeholder[0].getBoundingClientRect();
+                }
+                else{
+                    return this.getBounds();
+                }
+            };
 
-            this.pin = function(edge, distance){
+            this.isPinned = function(){
+                return ( (this.$placeholder) ? true : false );
+            };
+
+            this.pin = function(scroll_edge, elem_edge, distance){
                 if(!this.$placeholder && this.$element && this.$uiScrollpoint){
                     // calculate the offset for its absolute positioning
                     this.offset.x = this.$element[0].offsetLeft;
-                    this.offset.y = this.$uiScrollpoint.getScrollOffset() - this.$element[0].offsetTop - distance * ((edge == 'bottom')?-1.0:1.0);
+                    this.offset.y = this.$uiScrollpoint.getScrollOffset() - this.$element[0].offsetTop - distance * ((scroll_edge == 'bottom')?-1.0:1.0);
 
                     // create an invisible placeholder
                     this.$placeholder = this.$element.clone();
@@ -51,7 +83,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                         this.offset.x = bounds.left;
                         this.offset.y = -(this.$uiScrollpoint.$target[0].offsetTop) - (bounds.top-targetBounds.top+distance);
 
-                        if(edge == 'bottom'){
+                        if(scroll_edge == 'bottom'){
                             this.offset.y = -(this.$uiScrollpoint.$target[0].offsetTop) - this.$uiScrollpoint.$target[0].offsetHeight + this.$element[0].offsetHeight - (bounds.bottom-targetBounds.bottom-distance);
                         }
 
@@ -73,11 +105,14 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     this.$element.css('position', 'absolute');
 
                     // keep track of which edge
-                    this.edge = edge;
+                    this.edge = {scroll: scroll_edge, element: elem_edge};
 
                     // adjust the element's absolute top whenever target scrolls
                     this.$uiScrollpoint.$target.on('scroll', self.repositionPinned);
                     self.repositionPinned();
+
+                    // notify the Pin service that it is pinned
+                    Pin.pinned(this, this.edge, distance);
                 }
             };
 
@@ -106,7 +141,12 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     this.$placeholder.remove();
                     this.$placeholder = undefined;
 
-                    this.$uiScrollpoint.cachePosition();
+                    $timeout(function(){
+                        self.$uiScrollpoint.cachePosition();
+                    });
+                    
+                    // notify the Pin service that it is unpinned
+                    Pin.unpinned(this, edge);
                 }
             };
 
@@ -115,6 +155,8 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
             var uiScrollpoint = Ctrl[0];
             var uiScrollpointPin = Ctrl[1];
 
+            // setup the controller
+            uiScrollpointPin.setAttrs(attrs);
             uiScrollpointPin.setElement(elm);
             uiScrollpointPin.setScrollpoint(uiScrollpoint);
 
@@ -126,14 +168,22 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
             });
 
             // create a scrollpoint action that pins the element
-            uiScrollpoint.addAction(function(distance, element, edge){
+            uiScrollpoint.addAction(function(distance, element, scroll_edge, elem_edge){
                 if(distance >= 0 && !uiScrollpointPin.$placeholder){
-                    uiScrollpointPin.pin(edge, distance);
+                    uiScrollpointPin.pin(scroll_edge, elem_edge, distance);
                 }
                 else if(distance < 0 && uiScrollpointPin.$placeholder){
                     uiScrollpointPin.unpin();
                 }
             });
+
+            function reset(){
+                if(uiScrollpointPin.isPinned()){
+                    uiScrollpointPin.unpin();
+                }
+            }
+
+            scope.$on('scrollpointShouldReset', reset);
         }
     };
 }]);
