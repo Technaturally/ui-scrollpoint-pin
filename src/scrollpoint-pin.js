@@ -15,7 +15,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
         if(pin.stack && pin.stack.stacked && pin.stack.stacked[edge]){
             for(var i in pin.stack.stacked[edge]){
                 var cPin = pin.stack.stacked[edge][i];
-                if(shouldStack(pin, edge, cPin.getOriginalBounds())){
+                if(cPin.isPinned() && shouldStack(pin, edge, cPin.getOriginalBounds())){
                     var cBounds = cPin.getBounds();
                     if(edge == 'top' && (angular.isUndefined(offset) || cBounds.bottom > offset)){
                         offset = cBounds.bottom;
@@ -32,6 +32,9 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
     }
 
     function getOrigShift(pin, scroll_edge, elem_edge){
+        if(!pin || !pin.stack || !pin.stack.origEdges){
+            return;
+        }
         var pinIdx = pin.stack.items.indexOf(pin);
         var edges = pin.stack.origEdges[pinIdx];
         if(!edges){
@@ -108,7 +111,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
             }
             else if(angular.isDefined(pin.stack.stackShifts[pinIdx]) && angular.isDefined(pin.stack.stackShifts[pinIdx][edge])){
                 pin.stack.stackShifts[pinIdx][edge] = undefined;
-                newEdges[edge] = pin.stack.origEdges[pinIdx] ? pin.stack.origEdges[pinIdx][edge] : true;
+                newEdges[edge] = (pin.stack && pin.stack.origEdges && pin.stack.origEdges[pinIdx]) ? pin.stack.origEdges[pinIdx][edge] : true;
             }
 
             // were newEdges configured?
@@ -193,7 +196,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                                     if(cPin && cPin != pin && shouldStack(cPin, edge.scroll, bounds)){
 
                                         // cache the original edges for this pin
-                                        if(angular.isUndefined(pin.stack.origEdges[i])){
+                                        if(pin.stack && pin.stack.origEdges && angular.isUndefined(pin.stack.origEdges[i])){
                                             pin.stack.origEdges[i] = angular.copy(cPin.$uiScrollpoint.edges);
                                             pin.stack.origEdges[i]['#default'] = angular.copy(cPin.$uiScrollpoint.default_edge);
                                         }
@@ -285,8 +288,48 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                 if(pin.stack){
                     if(pin.stack.items){
                         var stackIdx = pin.stack.items.indexOf(pin);
+                        var edge;
                         if(stackIdx != -1){
                             pin.stack.items.splice(stackIdx, 1);
+                            // TODO: need to adjust indexes > stackIdx in all stack properties
+
+                            if(pin.stack.origEdges){
+                                if(pin.stack.origEdges[stackIdx]){
+                                    // TODO: need to reset the edges
+                                    pin.stack.origEdges[stackIdx] = undefined;
+                                }
+                            }
+
+                            if(pin.stack.stacked){
+                                for(edge in pin.stack.stacked){
+                                    var stackedIdx = pin.stack.stacked[edge].indexOf(pin);
+                                    if(stackedIdx != -1){
+                                        pin.stack.stacked[edge].splice(stackedIdx, 1);
+                                        // shift everything after that one
+                                    }
+                                }
+                            }
+
+                            if(pin.stack.stackShifts){
+                                if(pin.stack.stackShifts[stackIdx]){
+                                    pin.stack.stackShifts[stackIdx] = undefined;
+                                }
+                                /**
+                                for(itemIdx in pin.stack.stackShifts){
+                                    if(pin.stack.stackShifts[itemIdx]){
+                                        for(edge in pin.stack.stackShifts[itemIdx]){
+                                            if(pin.stack.stackShifts[itemIdx][edge] == stackIdx){
+                                                // it was stacked on this one
+                                            }
+                                            else if(pin.stack.stackShifts[itemIdx][edge] > stackIdx){
+                                                pin.stack.stackShifts[itemIdx][edge]--;
+                                            }
+                                        }
+                                    }
+                                }
+                                // also need to change itemIdx's
+                                */
+                            }
                         }
                     }
                     pin.stack = undefined;
@@ -446,27 +489,28 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
             uiScrollpointPin.setElement(elm);
             uiScrollpointPin.setScrollpoint(uiScrollpoint);
 
-            // default behaviour is to stack - use ui-scrollpoint-pin-overlay="true" to disable stacking
-            if(angular.isUndefined(attrs.uiScrollpointPinOverlay)){
+            // default behaviour is to stack - use ui-scrollpoint-pin-overlap="true" to disable stacking
+            if(angular.isUndefined(attrs.uiScrollpointPinOverlap)){
                 Pin.Stack.register(uiScrollpointPin);
             }
-            attrs.$observe('uiScrollpointPinOverlay', function(uiScrollpointPinOverlay){
-                if(!uiScrollpointPinOverlay){
-                    uiScrollpointPinOverlay = true;
+            attrs.$observe('uiScrollpointPinOverlap', function(uiScrollpointPinOverlap){
+                if(angular.isUndefined(uiScrollpointPinOverlap) || uiScrollpointPinOverlap == ''){
+                    uiScrollpointPinOverlap = true;
                 }
                 else{
-                    uiScrollpointPinOverlay = scope.$eval(uiScrollpointPinOverlay);
+                    uiScrollpointPinOverlap = scope.$eval(uiScrollpointPinOverlap);
                 }
 
-                if(!uiScrollpointPinOverlay){
-                    // register to stack if it is not overlaying
+                if(!uiScrollpointPinOverlap){
+                    // register to stack if it is not overlapping
                     Pin.Stack.register(uiScrollpointPin);
-                    elm.removeClass('pin-overlay');
+                    elm.removeClass('pin-overlap');
                 }
                 else{
-                    // unregister from stack if it is overlaying
+                    // unregister from stack if it is overlapping
+                    uiScrollpointPin.unpin();
                     Pin.Stack.unregister(uiScrollpointPin);
-                    elm.addClass('pin-overlay');
+                    elm.addClass('pin-overlap');
                 }
             });
 

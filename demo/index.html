@@ -59,9 +59,10 @@
                 $scope.shiftRelative = false;
                 $scope.relative = { x: 125, y: 30 };
 
-                $scope.useOverlay = true;
+                $scope.useOverlap = false;
 
                 $scope.target = {
+                    useOverlap: false,
                     showControls: false,
                     showAbsolute: false,
                     absolute: { x: -1, y: 725 },
@@ -137,10 +138,11 @@
                 margin: 0px;
                 z-index: 100;
             }
-            .demo.pin-overlay,
-            .demo.pin-overlay.ui-scrollpoint.pinned {
+            .demo.pin-overlap,
+            .demo.pin-overlap.ui-scrollpoint.pinned {
                 z-index: 150;
                 position: relative;
+                opacity: 0.75;
             }
 
             .scrollpoint-target .demo.ui-scrollpoint {
@@ -173,9 +175,11 @@
                     <label for="windowTopSpacer">Show top spacer:</label> <input type="checkbox" ng-model="topSpacer" id="windowTopSpacer" />
                 </div>
 
+                <!-- dynamic overlapping not functional
                 <div class="input pull-right">
-                    <label for="useOverlay">Use overlay:</label> <input type="checkbox" ng-model="useOverlay" id="useOverlay" />
+                    <label for="useOverlap">Use overlap:</label> <input type="checkbox" ng-model="useOverlap" id="useOverlap" />
                 </div>
+                -->
 
                 <br style="clear:both;"/>
 
@@ -200,6 +204,13 @@
                 <div class="input pull-right">
                     <label for="targetShowControls">Controls for Target:</label> <input type="checkbox" ng-model="target.showControls" id="targetShowControls" />
                     <div ng-show="target.showControls">
+
+                        <!-- dynamic overlapping not functional
+                        <div class="input pull-right">
+                            <label for="targetUseOverlap">Use overlap:</label> <input type="checkbox" ng-model="target.useOverlap" id="targetUseOverlap" />
+                        </div>
+                        -->
+
                         <div class="input pull-right">
                             <label for="targetShowAbsolute">Show absolute parent:</label> <input type="checkbox" ng-model="target.showAbsolute" id="targetShowAbsolute" />
                             <div ng-show="target.showAbsolute">
@@ -326,7 +337,7 @@
                 <br style="clear:both;"/>
                 <div class="spacer medium"></div>
 
-                <div class="demo full top bottom" ui-scrollpoint ui-scrollpoint-edge="['top','bottom']" ui-scrollpoint-pin></div>
+                <div class="demo full top bottom" ng-class="{'overlap': target.useOverlap}" ui-scrollpoint ui-scrollpoint-edge="['top','bottom']" ui-scrollpoint-pin ui-scrollpoint-pin-overlap="{{target.useOverlap}}"></div>
 
                 <br style="clear:both;"/>
                 <div class="spacer medium"></div>
@@ -406,7 +417,7 @@
 
             <div class="demo wide top bottom" ui-scrollpoint="+5" ui-scrollpoint-edge="['top','bottom']" ui-scrollpoint-pin></div>
 
-            <div class="demo full top bottom" ui-scrollpoint ui-scrollpoint-edge="{'top':'-10','bottom':'+10'}" ui-scrollpoint-pin></div>
+            <div class="demo full top bottom" ng-class="{'overlap': useOverlap}"  ui-scrollpoint ui-scrollpoint-edge="{'top':'-10','bottom':'+10'}" ui-scrollpoint-pin ui-scrollpoint-pin-overlap="{{useOverlap}}"></div>
 
             <div class="demo wide top bottom" ui-scrollpoint="+5" ui-scrollpoint-edge="['top','bottom']" ui-scrollpoint-pin></div>
 
