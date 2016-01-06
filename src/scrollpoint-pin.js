@@ -72,24 +72,18 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                 maxOffset = maxStackedBounds.bottom;
                 if(edge == 'bottom'){
                     maxOffset = maxStackedBounds.top - pin.$uiScrollpoint.getTargetHeight();
-                }                
+                }
             }
 
             // loop through the defined edges to build the new set of edges
-            var newEdges;
+            var edgesChanged = false;
+            var newEdges = {};
+            newEdges[edge] = {};
             if(maxOffset){
                 for(var elem_edge in pinEdges){
                     var pinEdge = pin.$uiScrollpoint.getEdge(edge, elem_edge);
                     // only shift non-absolute entries
                     if(pinEdge && !pinEdge.absolute){
-                        // initialize the newEdges
-                        if(angular.isUndefined(newEdges)){
-                            newEdges = {};
-                        }
-                        if(angular.isUndefined(newEdges[edge])){
-                            newEdges[edge] = {};
-                        }
-
                         // calculate the new shiftfor that element
                         var newShift = -maxOffset + getOrigShift(pin, edge, elem_edge);
                         if(pin.$uiScrollpoint.hasTarget){
@@ -99,20 +93,47 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                         newEdges[edge][elem_edge] = ((newShift >= 0)?'+':'')+newShift;
 
                         if(maxStackedIdx != -1){
-                            pin.stack.stackShifts[pinIdx] = maxStackedIdx;
+                            if(angular.isUndefined(pin.stack.stackShifts[pinIdx])){
+                                pin.stack.stackShifts[pinIdx] = {};
+                            }
+                            pin.stack.stackShifts[pinIdx][edge] = maxStackedIdx;
                         }
+
+                        edgesChanged = true;
                     }
                 }
             }
-            else if(angular.isDefined(pin.stack.stackShifts[pinIdx])){
-                pin.stack.stackShifts[pinIdx] = undefined;
+            else if(angular.isDefined(pin.stack.stackShifts[pinIdx]) && angular.isDefined(pin.stack.stackShifts[pinIdx][edge])){
+                pin.stack.stackShifts[pinIdx][edge] = undefined;
+                newEdges[edge] = pin.stack.origEdges[pinIdx] ? pin.stack.origEdges[pinIdx][edge] : null;
             }
 
             // were newEdges configured?
-            if(newEdges || reset){
+            if(edgesChanged || reset){
                 // unpin it for now or else its placeholder is going to be out of sync
                 if(pin.isPinned()){
                     pin.unpin();
+                }
+
+                var otherEdges = pin.$uiScrollpoint.edges;
+                for(var check_edge in otherEdges){
+                    if(angular.isUndefined(newEdges[check_edge])){
+                        newEdges[check_edge] = {};
+                        for(var check_elem_edge in otherEdges[check_edge]){
+                            var otherEdge = otherEdges[check_edge][check_elem_edge];
+                            if(angular.isObject(otherEdge)){
+                                if(otherEdge.absolute){
+                                    newEdges[check_edge][check_elem_edge] = otherEdge.shift + (otherEdge.percent?'%':'');
+                                }
+                                else{
+                                    newEdges[check_edge][check_elem_edge] = ((otherEdge.shift >= 0)?'+':'') + otherEdge.shift;
+                                }
+                            }
+                            else{
+                                newEdges[check_edge][check_elem_edge] = angular.copy(otherEdges[check_edge][check_elem_edge]);
+                            }
+                        }
+                    }
                 }
 
                 // set the edges
@@ -201,7 +222,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                                     // loop on all pins stacked on this edge
                                     for(var i in pin.stack.stackShifts){
                                         // only process it if the pin was shifted by the unpinned item
-                                        if(pin.stack.stackShifts[i] != itemIdx){
+                                        if(!pin.stack.stackShifts[i] || angular.isUndefined(pin.stack.stackShifts[i][edge.scroll]) || pin.stack.stackShifts[i][edge.scroll] != itemIdx){
                                             continue;
                                         }
 
