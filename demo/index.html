@@ -149,6 +149,11 @@
             .demo.pin-grouped {
                 position: relative;
                 z-index: 150;
+                background-color: #0CF;
+            }
+            .demo.pin-grouped.ui-scrollpoint.pinned {
+                background-color: #00F;
+                color: #FFF;
             }
 
             .scrollpoint-target .demo.ui-scrollpoint {
@@ -240,12 +245,12 @@
                 </div>
             </div>
 
-            <div class="spacer medium" ng-show="topSpacer"></div>
+            <div class="spacer" ng-show="topSpacer"></div>
 
 
             <div class="demo top" ui-scrollpoint="25" ui-scrollpoint-pin></div>
 
-            <div class="demo wide top check" style="width: 400px; height: 25px;" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-group="group1">Item #1</div>
+            <div class="demo wide top" style="width: 400px; height: 25px;" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-group="group1">Item #1</div>
 
             <div class="demo top" ui-scrollpoint ui-scrollpoint-pin></div>
 
@@ -255,7 +260,7 @@
 
             <div class="demo top" ui-scrollpoint ui-scrollpoint-pin="+10"></div>
 
-            <div class="demo wide top check" style="width: 325px; height: 35px;" ui-scrollpoint="{{scrollpoint}}" ui-scrollpoint-pin ui-scrollpoint-pin-group="group1" ui-scrollpoint-enabled="{{enabled['2']}}">Item #2</div>
+            <div class="demo wide top bottom" style="width: 325px; height: 35px;" ui-scrollpoint="{{scrollpoint}}" ui-scrollpoint-edge="['top', 'bottom']" ui-scrollpoint-pin ui-scrollpoint-pin-group="group1" ui-scrollpoint-enabled="{{enabled['2']}}">Item #2</div>
 
             <div class="demo top" ui-scrollpoint ui-scrollpoint-pin></div>
 
@@ -265,7 +270,7 @@
 
             <div class="demo top" ui-scrollpoint ui-scrollpoint-pin></div>
 
-            <div class="demo wide top check" style="width: 250px; height: 45px;" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-group="group1">Item #3</div>
+            <div class="demo wide top" style="width: 250px; height: 45px;" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-group="group1">Item #3</div>
 
             <div class="demo top" ui-scrollpoint="-5" ui-scrollpoint-pin></div>
 
@@ -468,6 +473,19 @@
             <div class="demo bottom" ui-scrollpoint="+10" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin></div>
 
             <br style="clear:both;"/>
+
+            <div class="demo wide bottom" style="width: 250px; height: 45px; z-index: 152;" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-group="group1">Item #4</div>
+            
+            <br style="clear:both;"/>
+
+            <div class="demo wide top bottom" style="width: 325px; height: 35px; z-index: 151;" ui-scrollpoint ui-scrollpoint-edge="['bottom','top']" ui-scrollpoint-pin ui-scrollpoint-pin-group="group1">Item #5</div>
+
+            <br style="clear:both;"/>
+
+            <div class="demo wide bottom" style="width: 400px; height: 25px;" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-group="group1">Item #6</div>
+
+            <br style="clear:both;"/>
+        
             <div class="spacer"></div>
             <br style="clear:both;"/>
         </section>
