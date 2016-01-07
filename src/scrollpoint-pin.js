@@ -1,12 +1,86 @@
 angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
 .factory('ui.scrollpoint.Pin', ['$timeout', function($timeout){
+    var Util = {
+        hide: function(pin){
+            if(pin.$element && pin.isPinned() && (!pin.group || pin != pin.group.active)){
+                if(angular.isFunction(pin.$element.hide)){
+                    pin.$element.hide();
+                }
+                else{
+                    pin.$element.css('display', 'none');
+                    pin.$element.css('visibility', 'hidden');
+                }
+            }
+        },
+        show: function(pin){
+            if(pin.$element){
+                if(angular.isFunction(pin.$element.show)){
+                    pin.$element.show();
+                }
+                else{
+                    pin.$element.css('display', null);
+                    pin.$element.css('visibility', null);
+                }
+            }
+        },
+        getOffset: function(pin, scroll_edge){
+            // looks up the offset for the element_edge closest to the scroll_edge (whilst applying shifts)
+            var offset;
+            if(pin && pin.$uiScrollpoint){
+                var bounds = pin.getOriginalBounds();
+                var scrollpoint = pin.$uiScrollpoint;
+                // loop through all the pin's element edges
+                var itemEdges = scrollpoint.getEdge(scroll_edge);
+                if(itemEdges){
+                    for(var elem_edge in itemEdges){
+                        // get the real edge definition (uses default if necessary)
+                        var edge = scrollpoint.getEdge(scroll_edge, elem_edge);
+                        if(edge){
+                            var edgeOffset;
+                            // calculate the offset - this block is copied from uiScrollpoint's checkOffset method
+                            if(edge.absolute){
+                                if(edge.percent){
+                                    edgeOffset = edge.shift / 100.0 * scrollpoint.getTargetScrollHeight();
+                                }
+                                else{
+                                    edgeOffset = edge.shift;
+                                }
+                                if(scroll_edge == 'bottom'){
+                                    edgeOffset = scrollpoint.getTargetContentHeight() - edgeOffset;
+                                    if(scrollpoint.hasTarget){
+                                        edgeOffset += scrollpoint.getTargetHeight();
+                                    }
+                                }
+                            }
+                            else{
+                                if(elem_edge == 'top'){
+                                    edgeOffset = bounds.top;
+                                }
+                                else if(elem_edge == 'bottom'){
+                                    edgeOffset = bounds.bottom;
+                                }
+                                edgeOffset += edge.shift;
+                            }
+
+                            // use this offset if it is closer to the scroll_edge than the previous chosen one
+                            if(angular.isUndefined(offset) || offset <= edgeOffset){
+                                offset = edgeOffset;
+                            }
+                        }
+                    }
+                }
+            }
+            return offset;
+        }
+    };
+
     var Groups = {
         groups: {},
         newGroup: function(groupId){
             return {
                 id: groupId,
                 items: [],
-                active: undefined,
+                active: {},
                 addItem: function(pin){
                     if(this.items.indexOf(pin) == -1){
                         this.items.push(pin);
@@ -14,6 +88,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                         if(pin.$element){
                             pin.$element.addClass('pin-grouped pin-group-'+this.id);
                         }
+                        this.refreshActive(pin);
                     }
                 },
                 removeItem: function(pin){
@@ -27,16 +102,64 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     if(pin.$element){
                         pin.$element.removeClass('pin-grouped pin-group-'+this.id);
                     }
+                    Util.show(pin);
+                    this.refreshActive(pin);
                 },
-                setActive: function(pin){
+                refreshActive: function(pin, edge){
+                    if(pin && pin.$uiScrollpoint){
+                        var edges = pin.$uiScrollpoint.edges;
+                        // for each of the edges this pin works with
+                        for(var scroll_edge in edges){
+                            // only process if no edge was specified or it is the specified edge
+                            if(angular.isUndefined(edge) || scroll_edge == edge){
+                                // determine the best match from the group for this edge
+                                var edgeOffset;
+                                var edgePin;
+                                for(var i in this.items){
+                                    var item = this.items[i];
+                                    // only check the item if it is pinned
+                                    if(item.isPinned() && item.$uiScrollpoint && item.edge && item.edge.scroll == scroll_edge){
+                                        // lookup its offset
+                                        var checkOffset = Util.getOffset(item, scroll_edge);
+                                        if(angular.isDefined(checkOffset) && (angular.isUndefined(edgeOffset) || (scroll_edge=='top' && checkOffset >= edgeOffset) || (scroll_edge=='bottom' && checkOffset <= edgeOffset)) ){
+                                            // choose it if it is closer to the scroll edge than the previously chosen item
+                                            edgeOffset = checkOffset;
+                                            edgePin = item;
+                                        }
+                                    }
+                                }
+
+                                // mark it as active
+                                this.active[scroll_edge] = edgePin;
+
+                                // refresh the visibility of items on this edge
+                                this.refreshVisibility(scroll_edge);
+
+                                // show this item
+                                if(edgePin){
+                                    Util.show(edgePin);
+                                }
+                            }
+                        }
+                    }
+                },
+                refreshVisibility: function(edge){
+                    for(var i in this.items){
+                        var item = this.items[i];
+                        // hide the item if it is pinned on this edge and it is not active
+                        //item.$uiScrollpoint && item.$uiScrollpoint.edges && item.$uiScrollpoint.edges[edge] && 
+                        if(item.isPinned() && item.edge && item.edge.scroll == edge && item != this.active[edge]){
+                            Util.hide(item);
+                        }
+                    }
                 },
                 pinned: function(pin, edge){
-                    var pinIdx = this.items.indexOf(pin);
-                    //console.log('PINNED ['+this.id+'] #'+pinIdx+' on ['+edge.scroll+']');
+                    this.refreshActive(pin, edge.scroll);
                 },
                 unpinned: function(pin, edge){
-                    var pinIdx = this.items.indexOf(pin);
-                    //console.log('UNPINNED ['+this.id+'] #'+pinIdx+' on ['+edge.scroll+']');
+                    var self = this;
+                    this.refreshActive(pin, edge.scroll);
+                    Util.show(pin); // make sure it is visible if it is unpinned
                 }
             };
         },
@@ -210,9 +333,9 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     this.$placeholder.remove();
                     this.$placeholder = undefined;
 
-                    //$timeout(function(){
-                    //    self.$uiScrollpoint.cachePosition();
-                    //});
+                    $timeout(function(){
+                        self.$uiScrollpoint.cachePosition();
+                    });
                     
                     // notify the Pin service that it is unpinned
                     Pin.unpinned(this, edge);
@@ -256,6 +379,9 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
             // ui-scrollpoint-pin-group attribute
             attrs.$observe('uiScrollpointPinGroup', function(pinGroup){
                 if(pinGroup){
+                    if(groupId){
+                        Pin.Groups.unregister(uiScrollpointPin, groupId);
+                    }
                     groupId = pinGroup.replace(/[^a-zA-Z0-9-]/g, '-');
                     Pin.Groups.register(uiScrollpointPin, groupId);
                 }
@@ -275,10 +401,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                 }
             });
 
-            function reset(){                
-                if(uiScrollpointPin.isPinned()){
-                    //uiScrollpointPin.unpin();
-                }
+            function reset(){
                 $timeout(function(){
                     uiScrollpoint.$target.triggerHandler('scroll');
                 }, 2);
