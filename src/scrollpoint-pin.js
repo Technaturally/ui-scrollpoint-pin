@@ -189,14 +189,77 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
         }
     };
 
+    var Stack = {
+        onWindow: undefined,
+        newStack: function(){
+            return {
+                items: [],
+                addItem: function(pin){
+                    if(this.items.indexOf(pin) == -1){
+                        this.items.push(pin);
+                        pin.stack = this;
+                    }
+                },
+                removeItem: function(pin){
+                    var pinIdx = this.items.indexOf(pin);
+                    if(pinIdx != -1){
+                        this.items.splice(pinIdx, 1);
+                    }
+                    if(pin.stack == this){
+                        pin.stack = undefined;
+                    }
+                },
+
+                pinned: function(pin, edge){
+                },
+                unpinned: function(pin, edge){
+                }
+            };
+        },
+        register: function(pin){
+            var stack;
+            if(pin.$uiScrollpoint && pin.$uiScrollpoint.hasTarget && pin.$uiScrollpoint.$target){
+                if(angular.isUndefined(pin.$uiScrollpoint.$target.stack)){
+                    pin.$uiScrollpoint.$target.stack = this.newStack();
+                }
+                stack = pin.$uiScrollpoint.$target.stack;
+            }
+            else{
+                stack = this.onWindow;
+            }
+            if(stack){
+                stack.addItem(pin);
+            }
+        },
+        unregister: function(pin){
+            if(pin.stack){
+                pin.stack.removeItem(pin);
+            }
+        },
+        pinned: function(pin, edge){
+            if(pin.stack){
+                pin.stack.pinned(pin, edge);
+            }
+        },
+        unpinned: function(pin, edge){
+            if(pin.stack){
+                pin.stack.unpinned(pin, edge);
+            }
+        }
+    };
+    Stack.onWindow = Stack.newStack();
+
     var Pin = {
         pinned: function(pin, edge){
+            Pin.Stack.pinned(pin, edge);
             Pin.Groups.pinned(pin, edge);
         },
         unpinned: function(pin, edge){
+            Pin.Stack.unpinned(pin, edge);
             Pin.Groups.unpinned(pin, edge);
         },
-        Groups: Groups
+        Groups: Groups,
+        Stack: Stack
     };
     return Pin;
 }])
@@ -361,15 +424,54 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                 uiScrollpointPin.unpin();
             });
 
+            // default behaviour is to stack - use ui-scrollpoint-pin-overlap="true" to disable stacking
+            if(angular.isUndefined(attrs.uiScrollpointPinOverlap)){
+                Pin.Stack.register(uiScrollpointPin);
+            }
+            attrs.$observe('uiScrollpointPinOverlap', function(uiScrollpointPinOverlap){
+                if(angular.isUndefined(uiScrollpointPinOverlap) || uiScrollpointPinOverlap == ''){
+                    uiScrollpointPinOverlap = true;
+                }
+                else{
+                    uiScrollpointPinOverlap = scope.$eval(uiScrollpointPinOverlap);
+                }
+
+                if(!uiScrollpointPinOverlap){
+                    // register to stack if it is not overlapping
+                    Pin.Stack.register(uiScrollpointPin);
+                    elm.removeClass('pin-overlap');
+                }
+                else{
+                    // unregister from stack if it is overlapping
+                    uiScrollpointPin.unpin();
+                    Pin.Stack.unregister(uiScrollpointPin);
+                    elm.addClass('pin-overlap');
+                }
+            });
+
+            attrs.$observe('uiScrollpointAbsolute', function(scrollpointAbsolute){
+                // absolute could change the target, so unregister from its existing stack
+                Pin.Stack.unregister(uiScrollpointPin);
+
+                // on next digest cycle, register on whatever its new stack should be
+                $timeout(function(){
+                    Pin.Stack.register(uiScrollpointPin);
+                });
+            });
+
             // ui-scrollpoint-enabled attribute
             attrs.$observe('uiScrollpointEnabled', function(scrollpointEnabled){
                 scrollpointEnabled = scope.$eval(scrollpointEnabled);
                 if(!scrollpointEnabled){
                     uiScrollpointPin.unpin();
 
+                    Pin.Stack.unregister(uiScrollpointPin);
                     Pin.Groups.unregister(uiScrollpointPin, groupId);
                 }
                 else{
+                    if(angular.isUndefined(attrs.uiScrollpointPinOverlap)){
+                        Pin.Stack.register(uiScrollpointPin);
+                    }
                     if(groupId){
                         Pin.Groups.register(uiScrollpointPin, groupId);
                     }
