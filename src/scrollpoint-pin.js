@@ -209,7 +209,6 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                         var self = this;
                         $timeout(function(){
                             self.origEdges[pinIdx] = angular.copy(pin.$uiScrollpoint.edges);
-                            self.origEdges[pinIdx]['#default'] = angular.copy(pin.$uiScrollpoint.default_edge);
                         });
                     }
                 },
@@ -220,8 +219,10 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                         this.items.splice(pinIdx, 1);
 
                         // reset the edges
-                        this.applyEdges([{pin: pin, edges: this.origEdges[pinIdx]}], 50);
-                        this.origEdges[pinIdx] = undefined;
+                        if(this.origEdges[pinIdx]){
+                            this.applyEdges([{pin: pin, edges: angular.copy(this.origEdges[pinIdx])}], 150);
+                            this.origEdges[pinIdx] = undefined;
+                        }
 
                         // remove the pin from the stacked items
                         for(var edge in this.stacked){
@@ -295,7 +296,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                 prepareEdgeAttr: function(edges){
                     var new_edges;
                     for(var scroll_edge in edges){
-                        if(scroll_edge != '#default' && angular.isObject(edges[scroll_edge])){
+                        if(angular.isObject(edges[scroll_edge])){
                             for(var elem_edge in edges[scroll_edge]){
                                 var edge = edges[scroll_edge][elem_edge];
                                 if(angular.isUndefined(new_edges)){
@@ -317,6 +318,9 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                                 }
                             }
                         }
+                        else{
+                            new_edges[scroll_edge] = edges[scroll_edge];
+                        }
                     }
                     return new_edges;
                 },
@@ -326,11 +330,12 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     if(itemIdx != -1){
                         if(this.origEdges[itemIdx]){
                             var edges = this.origEdges[itemIdx];
+
                             if(edges[scroll_edge] && edges[scroll_edge][elem_edge] && edges[scroll_edge][elem_edge] !== true){
                                 edge = edges[scroll_edge][elem_edge];
                             }
-                            if(!edge && edges['#default']){
-                                edge = edges['#default'];
+                            if(!edge){
+                                edge = pin.$uiScrollpoint.default_edge;
                             }
                         }
                     }
