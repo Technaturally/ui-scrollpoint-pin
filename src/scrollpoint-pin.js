@@ -267,7 +267,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                 },
                 applyEdges: function(shifts, rescrollDelay){
                     if(angular.isUndefined(rescrollDelay)){
-                        rescrollDelay = 5;
+                        rescrollDelay = 100;
                     }
                     if(shifts.length){
                         var targets = [];
