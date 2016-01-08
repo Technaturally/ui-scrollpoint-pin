@@ -54,7 +54,8 @@
                 $scope.inView = {};
                 $scope.outView = {};
                 $scope.topSpacer = false;
-                $scope.enabled = { '2': true };
+                $scope.toggleItems = false;
+                $scope.enabled = { 'A': true, 'B': true, 'C': true, 'D': true, 'E': true, 'F': true, 'G': true, '1': true, '2': true, '3': true };
                 $scope.showAbsolute = true;
                 $scope.absolute = { x: 300, y: 775 };
                 $scope.shiftRelative = false;
@@ -143,7 +144,14 @@
             .demo.pin-overlap.ui-scrollpoint.pinned {
                 position: relative;
                 z-index: 150;
-                opacity: 0.75;
+                opacity: 0.5;
+                color: #FFF;
+            }
+            .demo.pin-overlap {
+                background-color: #90D;
+            }
+            .demo.pin-overlap.ui-scrollpoint.pinned {
+                background-color: #8E0;
             }
 
             .demo.pin-grouped {
@@ -183,18 +191,22 @@
                 <br style="clear:both;"/>
 
                 <div class="input pull-right">
+                    <label for="toggleItems">Toggle Items:</label> <input type="checkbox" ng-model="toggleItems" id="toggleItems" />
+
+                    <div ng-show="toggleItems">
+                        <div ng-repeat="(key,value) in enabled">
+                            <label for="enabled-{{key}}">Enable Item {{key}}:</label> <input type="checkbox" ng-model="enabled[key]" id="enabled-{{key}}" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input pull-right">
                     <label for="windowTopSpacer">Show top spacer:</label> <input type="checkbox" ng-model="topSpacer" id="windowTopSpacer" />
                 </div>
 
                 <div class="input pull-right">
-                    <label for="enabled-2">Enable Item #2:</label> <input type="checkbox" ng-model="enabled['2']" id="enabled-2" />
-                </div>
-
-                <!-- dynamic overlapping not functional
-                <div class="input pull-right">
                     <label for="useOverlap">Use overlap:</label> <input type="checkbox" ng-model="useOverlap" id="useOverlap" />
                 </div>
-                -->
 
                 <br style="clear:both;"/>
 
@@ -205,6 +217,8 @@
                         <label for="absoluteY">Y:</label> <input type="text" ng-model="absolute.y" id="absoluteY" />
                     </div>
                 </div>
+
+                <br style="clear:both;"/>
 
                 <div class="input pull-right">
                     <label for="shiftRelative">Shift relative parent:</label> <input type="checkbox" ng-model="shiftRelative" id="shiftRelative" />
@@ -247,36 +261,52 @@
 
             <div class="spacer" ng-show="topSpacer"></div>
 
-
-            <div class="demo top" ui-scrollpoint="25" ui-scrollpoint-pin></div>
-
-            <div class="demo wide top" style="width: 400px; height: 25px;" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-group="group1">Item #1</div>
-
-            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin></div>
-
-            <div class="demo top" ui-scrollpoint="-10" ui-scrollpoint-pin></div>
+            <div class="demo top" ui-scrollpoint="30" ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['D']}}">Item D</div>
+            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['A']}}">Item A</div>
+            <div class="demo wide top" ui-scrollpoint ui-scrollpoint-pin></div>
+            <div class="demo top" ui-scrollpoint="-10" ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['G']}}">Item G</div>
 
             <br style="clear:both;"/>
 
-            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin="+10"></div>
+            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['E']}}">Item E</div>
+            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['B']}}">Item B</div>
+            <div class="demo top" style="height: 45px;" ui-scrollpoint="-5" ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['1']}}" ui-scrollpoint-pin-group="group1">Item #1</div>
+            <div class="demo top" ui-scrollpoint="-5" ui-scrollpoint-pin>Item L</div>
+            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin>Item H</div>
+            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin>Item J</div>
 
-            <div class="demo wide top bottom" style="width: 325px; height: 35px;" ui-scrollpoint="{{scrollpoint}}" ui-scrollpoint-edge="['top', 'bottom']" ui-scrollpoint-pin ui-scrollpoint-pin-group="group1" ui-scrollpoint-enabled="{{enabled['2']}}">Item #2</div>
+            <br style="clear:both;"/>
 
-            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin></div>
-
-            <div class="demo top" ui-scrollpoint="-5" ui-scrollpoint-pin></div>
+            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['F']}}">Item F</div>
+            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['C']}}">Item C</div>
+            <div class="demo top" style="height: 35px;" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['2']}}" ui-scrollpoint-pin-group="group1">Item #2</div>
+            <div class="demo top" ui-scrollpoint="+10" ui-scrollpoint-pin>Item M</div>
+            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin>Item I</div>
+            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin>Item K</div>
 
             <br style="clear:both;"/>
 
             <div class="demo top" ui-scrollpoint ui-scrollpoint-pin></div>
+            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin></div>
+            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin></div>
+            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-overlap="{{useOverlap}}"></div>
+            <div class="demo top wide" ui-scrollpoint ui-scrollpoint-pin></div>
 
-            <div class="demo wide top" style="width: 250px; height: 45px;" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-group="group1">Item #3</div>
+            <br style="clear:both;"/>
 
-            <div class="demo top" ui-scrollpoint="-5" ui-scrollpoint-pin></div>
-
+            <div class="demo top" ui-scrollpoint="-10" ui-scrollpoint-pin ui-scrollpoint-pin-overlap></div>
+            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-overlap></div>
+            <div class="demo top" style="height: 25px;" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['3']}}" ui-scrollpoint-pin-group="group1">Item #3</div>
+            <div class="demo top wide" ui-scrollpoint ui-scrollpoint-pin></div>
             <div class="demo top" ui-scrollpoint ui-scrollpoint-pin></div>
 
             <br style="clear:both;"/>
+
+            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin></div>
+            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin></div>
+            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin></div>
+
+<!--
 
             <div class="scrollpoint-target" ui-scrollpoint-target>
                 <h2>Scrollpoint Target</h2>
@@ -478,11 +508,11 @@
             
             <br style="clear:both;"/>
 
-            <div class="demo wide top bottom" style="width: 325px; height: 35px; z-index: 151;" ui-scrollpoint ui-scrollpoint-edge="['bottom','top']" ui-scrollpoint-pin ui-scrollpoint-pin-group="group1">Item #5</div>
+            <div class="demo wide bottom" style="width: 325px; height: 35px; z-index: 151;" ui-scrollpoint ui-scrollpoint-edge="['bottom']" ui-scrollpoint-pin ui-scrollpoint-pin-group="group1">Item #5</div>
 
             <br style="clear:both;"/>
 
-            <div class="demo wide bottom" style="width: 400px; height: 25px;" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-group="group1">Item #6</div>
+            <div class="demo wide bottom" style="width: 400px; height: 25px;" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-group="group1">Item #6</div-->
 
             <br style="clear:both;"/>
         
