@@ -390,7 +390,6 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                 calculateShift: function(pin, scroll_edge){
                     var offset = 0;
                     if(this.stacked[scroll_edge]){
-                        var pinBounds = pin.getOriginalBounds();
                         for(var i in this.stacked[scroll_edge]){
                             var item = this.stacked[scroll_edge][i];
                             if(item != pin && item.isPinned() && this.shouldStack(pin, scroll_edge, item)){
@@ -402,6 +401,10 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                                     offset = shiftBounds.top;
                                 }
                             }
+                        }
+                        if(offset && pin.$uiScrollpoint.hasTarget){
+                            var targetBounds = pin.$uiScrollpoint.$target[0].getBoundingClientRect();
+                            offset -= targetBounds.top;
                         }
                         if(angular.isDefined(offset) && scroll_edge == 'top'){
                             offset *= -1.0;
