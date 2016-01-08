@@ -153,6 +153,19 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                         }
                     }
                 },
+                getFirst: function(scroll_edge){
+                    var firstPin;
+                    var edgeOffset;
+                    for(var i in this.items){
+                        var item = this.items[i];
+                        var checkOffset = Util.getOffset(item, scroll_edge);
+                        if(angular.isDefined(checkOffset) && (angular.isUndefined(edgeOffset) || (scroll_edge=='top' && checkOffset <= edgeOffset) || (scroll_edge=='bottom' && checkOffset >= edgeOffset)) ){
+                            edgeOffset = checkOffset;
+                            firstPin = item;
+                        }
+                    }
+                    return firstPin;
+                },
                 pinned: function(pin, edge){
                     this.refreshActive(pin, edge.scroll);
                 },
@@ -397,11 +410,26 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     return offset;
                 },
                 shouldStack: function(pin, edge, against){
-                    if(against.isPinned()){
+                    if(against.isPinned() && pin != against){
+                        if(against.group){
+                            against = against.group.getFirst(edge);
+                        }
                         var bounds = against.getOriginalBounds();
                         var pinBounds = pin.getOriginalBounds();
                         if( ( (pinBounds.left >= bounds.left && pinBounds.left <= bounds.right) || (pinBounds.right >= bounds.left && pinBounds.right <= bounds.right) || (bounds.left >= pinBounds.left && bounds.left <= pinBounds.right) || (bounds.right >= pinBounds.left && bounds.right <= pinBounds.right) ) && ( (edge == 'top' && pinBounds.top >= bounds.bottom) || (edge == 'bottom' && pinBounds.bottom <= bounds.top) ) ){
-                            return true;
+                            if(pin.group){
+                                // don't stack it against members of its own group
+                                if(!against.group || pin.group.id != against.group.id){
+                                    // stack the first member of a group
+                                    var firstInGroup = pin.group.getFirst(edge);
+                                    if(pin == firstInGroup || this.shouldStack(firstInGroup, edge, against)){
+                                        return true;
+                                    }
+                                }
+                            }
+                            else{
+                                return true;
+                            }
                         }
                     }
                     return false;
