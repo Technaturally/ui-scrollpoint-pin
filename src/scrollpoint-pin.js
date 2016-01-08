@@ -194,6 +194,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
         newStack: function(){
             return {
                 items: [],
+                pinned: {},
                 addItem: function(pin){
                     if(this.items.indexOf(pin) == -1){
                         this.items.push(pin);
@@ -205,14 +206,43 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     if(pinIdx != -1){
                         this.items.splice(pinIdx, 1);
                     }
+
+                    for(var edge in this.pinned){
+                        var pinnedIdx = this.pinned[edge].indexOf(pin);
+                        if(pinnedIdx != -1){
+                            this.pinned[edge].splice(pinnedIdx, 1);
+                        }
+                    }
+
                     if(pin.stack == this){
                         pin.stack = undefined;
                     }
                 },
 
+                refreshEdges: function(pin, edge){
+                },
+
                 pinned: function(pin, edge){
+                    if(edge.scroll){
+                        if(angular.isUndefined(this.pinned[edge.scroll])){
+                            this.pinned[edge.scroll] = [];
+                        }
+                        var pinnedIdx = this.pinned[edge.scroll].indexOf(pin);
+                        if(pinnedIdx == -1){
+                            // add this pin to the stack
+                            this.pinned[edge.scroll].push(pin);
+                            this.refreshEdges(pin, edge);
+                        }
+                    }
                 },
                 unpinned: function(pin, edge){
+                    if(this.pinned[edge.scroll]){
+                        var pinnedIdx = this.pinned[edge.scroll].indexOf(pin);
+                        if(pinnedIdx != -1){
+                            this.pinned[edge.scroll].splice(pinnedIdx, 1);
+                            this.refreshEdges(pin, edge);
+                        }
+                    }
                 }
             };
         },
@@ -410,7 +440,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
             var uiScrollpoint = Ctrl[0];
             var uiScrollpointPin = Ctrl[1];
 
-            var groupId = undefined;
+            var groupId;
 
             // setup the controller
             uiScrollpointPin.setAttrs(attrs);
@@ -429,7 +459,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                 Pin.Stack.register(uiScrollpointPin);
             }
             attrs.$observe('uiScrollpointPinOverlap', function(uiScrollpointPinOverlap){
-                if(angular.isUndefined(uiScrollpointPinOverlap) || uiScrollpointPinOverlap == ''){
+                if(!uiScrollpointPinOverlap && uiScrollpointPinOverlap !== false){
                     uiScrollpointPinOverlap = true;
                 }
                 else{
