@@ -198,10 +198,12 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                 origEdges: {},
                 addItem: function(pin){
                     if(this.items.indexOf(pin) == -1){
+                        // add the pin to items
                         this.items.push(pin);
-                        pin.stack = this;
-
                         var pinIdx = this.items.length - 1;
+
+                        // assign the stack to the pin
+                        pin.stack = this;
 
                         // cache the original edges for this pin
                         var self = this;
@@ -209,17 +211,19 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                             self.origEdges[pinIdx] = angular.copy(pin.$uiScrollpoint.edges);
                             self.origEdges[pinIdx]['#default'] = angular.copy(pin.$uiScrollpoint.default_edge);
                         });
-                        
                     }
                 },
                 removeItem: function(pin){
                     var pinIdx = this.items.indexOf(pin);
                     if(pinIdx != -1){
+                        // remove the pin from items
                         this.items.splice(pinIdx, 1);
 
+                        // reset the edges
                         this.applyEdges([{pin: pin, edges: this.origEdges[pinIdx]}], 50);
                         this.origEdges[pinIdx] = undefined;
 
+                        // remove the pin from the stacked items
                         for(var edge in this.stacked){
                             var pinnedIdx = this.stacked[edge].indexOf(pin);
                             if(pinnedIdx != -1){
@@ -236,6 +240,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                         }
                     }
 
+                    // remove the stack from the pin
                     if(pin.stack == this){
                         pin.stack = undefined;
                     }
@@ -299,11 +304,16 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                                 if(angular.isUndefined(new_edges[scroll_edge])){
                                     new_edges[scroll_edge] = {};
                                 }
-                                if(edge.absolute){
-                                    new_edges[scroll_edge][elem_edge] = edge.shift+(edge.percent?'%':'');
+                                if(angular.isObject(edge)){
+                                    if(edge.absolute){
+                                        new_edges[scroll_edge][elem_edge] = edge.shift+(edge.percent?'%':'');
+                                    }
+                                    else{
+                                        new_edges[scroll_edge][elem_edge] = ((edge.shift >= 0)?'+':'')+edge.shift;
+                                    }
                                 }
                                 else{
-                                    new_edges[scroll_edge][elem_edge] = ((edge.shift >= 0)?'+':'')+edge.shift;
+                                    new_edges[scroll_edge][elem_edge] = edge;
                                 }
                             }
                         }
