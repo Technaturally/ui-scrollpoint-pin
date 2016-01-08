@@ -194,23 +194,45 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
         newStack: function(){
             return {
                 items: [],
-                pinned: {},
+                stacked: {},
+                origEdges: {},
                 addItem: function(pin){
                     if(this.items.indexOf(pin) == -1){
                         this.items.push(pin);
                         pin.stack = this;
+
+                        var pinIdx = this.items.length - 1;
+
+                        // cache the original edges for this pin
+                        var self = this;
+                        $timeout(function(){
+                            self.origEdges[pinIdx] = angular.copy(pin.$uiScrollpoint.edges);
+                            self.origEdges[pinIdx]['#default'] = angular.copy(pin.$uiScrollpoint.default_edge);
+                        });
+                        
                     }
                 },
                 removeItem: function(pin){
                     var pinIdx = this.items.indexOf(pin);
                     if(pinIdx != -1){
                         this.items.splice(pinIdx, 1);
-                    }
 
-                    for(var edge in this.pinned){
-                        var pinnedIdx = this.pinned[edge].indexOf(pin);
-                        if(pinnedIdx != -1){
-                            this.pinned[edge].splice(pinnedIdx, 1);
+                        this.applyEdges([{pin: pin, edges: this.origEdges[pinIdx]}], 50);
+                        this.origEdges[pinIdx] = undefined;
+
+                        for(var edge in this.stacked){
+                            var pinnedIdx = this.stacked[edge].indexOf(pin);
+                            if(pinnedIdx != -1){
+                                this.stacked[edge].splice(pinnedIdx, 1);
+                            }
+                        }
+
+                        // update the indexes of origEdges
+                        for(var i in this.origEdges){
+                            if(i > pinIdx){
+                                this.origEdges[i - 1] = this.origEdges[i];
+                                this.origEdges[i] = undefined;
+                            }
                         }
                     }
 
@@ -220,27 +242,182 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                 },
 
                 refreshEdges: function(pin, edge){
+                    if(edge.scroll){
+                        var bounds = pin.getOriginalBounds();
+                        var shiftPins = [];
+                        for(var i in this.items){
+                            if(this.items[i] != pin){
+                                var new_edges = this.getNewEdges(this.items[i], edge.scroll);
+                                if(new_edges){
+                                    shiftPins.push({
+                                        pin: this.items[i],
+                                        edges: new_edges
+                                    });
+                                }
+                            }
+                        }
+                        this.applyEdges(shiftPins);
+                    }
+                },
+                applyEdges: function(shifts, rescrollDelay){
+                    if(angular.isUndefined(rescrollDelay)){
+                        rescrollDelay = 5;
+                    }
+                    if(shifts.length){
+                        var targets = [];
+                        for(var i in shifts){
+                            var shift = shifts[i];
+                            this.setEdges(shift.pin, shift.edges);
+
+                            if(shift.pin.$uiScrollpoint.$target && targets.indexOf(shift.pin.$uiScrollpoint.$target) == -1){
+                                targets.push(shift.pin.$uiScrollpoint.$target);
+                            }
+                        }
+                        if(targets.length){
+                            $timeout(function(){
+                                for(var i in targets){
+                                    targets[i].triggerHandler('scroll');
+                                }
+                            }, rescrollDelay);
+                        }
+                    }
+                },
+                setEdges: function(pin, edges){
+                    edges = this.prepareEdgeAttr(edges);
+                    pin.unpin();
+                    pin.$attrs.$set('uiScrollpointEdge', angular.toJson(edges));
+                },
+                prepareEdgeAttr: function(edges){
+                    var new_edges;
+                    for(var scroll_edge in edges){
+                        if(scroll_edge != '#default' && angular.isObject(edges[scroll_edge])){
+                            for(var elem_edge in edges[scroll_edge]){
+                                var edge = edges[scroll_edge][elem_edge];
+                                if(angular.isUndefined(new_edges)){
+                                    new_edges = {};
+                                }
+                                if(angular.isUndefined(new_edges[scroll_edge])){
+                                    new_edges[scroll_edge] = {};
+                                }
+                                if(edge.absolute){
+                                    new_edges[scroll_edge][elem_edge] = edge.shift+(edge.percent?'%':'');
+                                }
+                                else{
+                                    new_edges[scroll_edge][elem_edge] = ((edge.shift >= 0)?'+':'')+edge.shift;
+                                }
+                            }
+                        }
+                    }
+                    return new_edges;
+                },
+                getOriginalEdge: function(pin, scroll_edge, elem_edge){
+                    var edge;
+                    var itemIdx = this.items.indexOf(pin);
+                    if(itemIdx != -1){
+                        if(this.origEdges[itemIdx]){
+                            var edges = this.origEdges[itemIdx];
+                            if(edges[scroll_edge] && edges[scroll_edge][elem_edge] && edges[scroll_edge][elem_edge] !== true){
+                                edge = edges[scroll_edge][elem_edge];
+                            }
+                            if(!edge && edges['#default']){
+                                edge = edges['#default'];
+                            }
+                        }
+                    }
+                    return edge;
+                },
+                getNewEdges: function(pin, scroll_edge){
+                    var itemIdx = this.items.indexOf(pin);
+                    if(itemIdx != -1){
+                        var origEdges = this.origEdges[itemIdx];
+                        var new_edges = {};
+                        var edges_changed = false;
+                        for(var other_edge in pin.$uiScrollpoint.edges){
+                            new_edges[other_edge] = pin.$uiScrollpoint.edges[other_edge];
+                        }
+                        var elem_edges = pin.$uiScrollpoint.getEdge(scroll_edge);
+                        for(var elem_edge in elem_edges){
+                            var edge = pin.$uiScrollpoint.getEdge(scroll_edge, elem_edge);
+                            if(edge && !edge.absolute){
+                                var shift = this.calculateShift(pin, scroll_edge);
+                                var origEdge = this.getOriginalEdge(pin, scroll_edge, elem_edge);
+                                var newShift = shift + (origEdge ? origEdge.shift : 0);
+                                if(new_edges[scroll_edge][elem_edge].shift != newShift){
+                                    new_edges[scroll_edge][elem_edge] = {
+                                        shift: newShift,
+                                        absolute: false,
+                                        percent: false,
+                                        pin_shift: true
+                                    };
+
+                                    edges_changed = true;
+                                }
+                            }
+                        }
+                        if(edges_changed){
+                            return new_edges;
+                        }
+                    }
+                },
+                calculateShift: function(pin, scroll_edge){
+                    var offset = 0;
+                    if(this.stacked[scroll_edge]){
+                        var pinBounds = pin.getOriginalBounds();
+                        for(var i in this.stacked[scroll_edge]){
+                            var item = this.stacked[scroll_edge][i];
+                            if(item != pin && item.isPinned() && this.shouldStack(pin, scroll_edge, item)){
+                                var shiftBounds = item.getBounds();
+                                if(scroll_edge == 'top' && (angular.isUndefined(offset) || shiftBounds.bottom >= offset)){
+                                    offset = shiftBounds.bottom;
+                                }
+                                else if(scroll_edge == 'bottom' && (angular.isUndefined(offset) || shiftBounds.top <= offset)){
+                                    offset = shiftBounds.top;
+                                }
+                            }
+                        }
+                        if(angular.isDefined(offset) && scroll_edge == 'top'){
+                            offset *= -1.0;
+                        }
+                    }
+                    return offset;
+                },
+                shouldStack: function(pin, edge, against){
+                    if(against.isPinned()){
+                        var bounds = against.getOriginalBounds();
+                        var pinBounds = pin.getOriginalBounds();
+                        if( ( (pinBounds.left >= bounds.left && pinBounds.left <= bounds.right) || (pinBounds.right >= bounds.left && pinBounds.right <= bounds.right) || (bounds.left >= pinBounds.left && bounds.left <= pinBounds.right) || (bounds.right >= pinBounds.left && bounds.right <= pinBounds.right) ) && ( (edge == 'top' && pinBounds.top >= bounds.bottom) || (edge == 'bottom' && pinBounds.bottom <= bounds.top) ) ){
+                            return true;
+                        }
+                    }
+                    return false;
                 },
 
                 pinned: function(pin, edge){
                     if(edge.scroll){
-                        if(angular.isUndefined(this.pinned[edge.scroll])){
-                            this.pinned[edge.scroll] = [];
+                        if(angular.isUndefined(this.stacked[edge.scroll])){
+                            this.stacked[edge.scroll] = [];
                         }
-                        var pinnedIdx = this.pinned[edge.scroll].indexOf(pin);
+                        var pinnedIdx = this.stacked[edge.scroll].indexOf(pin);
                         if(pinnedIdx == -1){
+                            var checkEdge = pin.$uiScrollpoint.getEdge(edge.scroll, edge.element);
                             // add this pin to the stack
-                            this.pinned[edge.scroll].push(pin);
-                            this.refreshEdges(pin, edge);
+                            this.stacked[edge.scroll].push(pin);
+                            var self = this;
+                            $timeout(function(){
+                                self.refreshEdges(pin, edge);
+                            }, 150);
                         }
                     }
                 },
                 unpinned: function(pin, edge){
-                    if(this.pinned[edge.scroll]){
-                        var pinnedIdx = this.pinned[edge.scroll].indexOf(pin);
+                    if(this.stacked[edge.scroll]){
+                        var pinnedIdx = this.stacked[edge.scroll].indexOf(pin);
                         if(pinnedIdx != -1){
-                            this.pinned[edge.scroll].splice(pinnedIdx, 1);
-                            this.refreshEdges(pin, edge);
+                            this.stacked[edge.scroll].splice(pinnedIdx, 1);
+                            var self = this;
+                            $timeout(function(){
+                                self.refreshEdges(pin, edge);
+                            });
                         }
                     }
                 }
