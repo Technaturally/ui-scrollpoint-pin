@@ -214,6 +214,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                 items: [],
                 stacked: {},
                 origEdges: {},
+                targetRefresh: undefined,
                 addItem: function(pin){
                     if(this.items.indexOf(pin) == -1){
                         // add the pin to items
@@ -298,11 +299,16 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                             }
                         }
                         if(targets.length){
-                            $timeout(function(){
+                            if(this.targetRefresh){
+                                $timeout.cancel(this.targetRefresh);
+                            }
+                            this.targetRefresh = $timeout(function(){
                                 for(var i in targets){
                                     targets[i].triggerHandler('scroll');
                                 }
-                            }, rescrollDelay);
+                            }, rescrollDelay).then(function(){
+                                this.targetRefresh = undefined;
+                            });
                         }
                     }
                 },
