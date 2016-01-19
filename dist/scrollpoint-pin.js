@@ -1,7 +1,7 @@
 /*!
  * angular-ui-scrollpoint-pin
  * https://github.com/TechNaturally/ui-scrollpoint-pin
- * Version: 2.0.0 - 2016-01-12T17:53:29.935Z
+ * Version: 2.0.1 - 2016-01-19T17:29:57.252Z
  * License: MIT
  */
 
@@ -312,12 +312,13 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                             if(this.targetRefresh){
                                 $timeout.cancel(this.targetRefresh);
                             }
+                            var self = this;
                             this.targetRefresh = $timeout(function(){
                                 for(var i in targets){
                                     targets[i].triggerHandler('scroll');
                                 }
                             }, rescrollDelay).then(function(){
-                                this.targetRefresh = undefined;
+                                self.targetRefresh = undefined;
                             });
                         }
                     }
