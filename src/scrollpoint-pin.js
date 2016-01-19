@@ -302,12 +302,13 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                             if(this.targetRefresh){
                                 $timeout.cancel(this.targetRefresh);
                             }
+                            var self = this;
                             this.targetRefresh = $timeout(function(){
                                 for(var i in targets){
                                     targets[i].triggerHandler('scroll');
                                 }
                             }, rescrollDelay).then(function(){
-                                this.targetRefresh = undefined;
+                                self.targetRefresh = undefined;
                             });
                         }
                     }
