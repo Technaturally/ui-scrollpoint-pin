@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="demo">
+    <head>
+        <meta charset="utf-8">
+        <title>AngularJS ui-scrollpoint</title>
+
+        <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.4.1/angular.js"></script>
+        <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.css">
+
+        <link rel="stylesheet" href="style.css">
+
+        <!-- ui-scrollpoint files -->
+        <script src="../bower_components/angular-ui-scrollpoint/dist/scrollpoint.js"></script>
+        <script src="../dist/scrollpoint-pin.js"></script>
+        <script>
+            var app = angular.module('demo', ['ui.scrollpoint.pin']);
+            app.controller( 'scrollpointTest', function($scope, $timeout, $window){
+                $scope.trackView = function(distance, element, edge){
+                    var id = element.attr('id');
+                    if($scope.views.indexOf(id) == -1){
+                        $scope.views.push(id);
+                        $scope.views.sort();
+                    }
+                    if(distance >= 0){
+                        $scope.inView[id] = false;
+                        $scope.outView[id] = edge;
+                        element.removeClass('in-view');
+                    }
+                    else{
+                        $scope.inView[id] = true;
+                        $scope.outView[id] = undefined;
+                        element.addClass('in-view');
+                    }
+                    $scope.$apply();
+                };
+
+                $scope.reportScroll = function(distance, element, edge){
+                    // distance >= 0 means scrollpoint is hit & applied
+                    // distance < 0 means scrollpoint is hit & unapplied
+                    // undefined edge means initialized unhit / unapplied (-distance is distance from edge)
+                    console.log(edge+' hit @ '+distance);
+                };
+
+                // we can still use ui-scrollpoint-action with pinning
+                $scope.reportPin = function(distance, element, edge){
+                    // distance >= 0 means scrollpoint is hit & applied
+                    // distance < 0 means scrollpoint is hit & unapplied
+                    // undefined edge means initialized unhit / unapplied (-distance is distance from edge)
+                    console.log(((distance >= 0)?'pinned':'unpinned')+' @ '+edge);
+                };
+
+                $scope.scrollpoint = undefined;
+                $scope.views = [];
+                $scope.inView = {};
+                $scope.outView = {};
+                $scope.topSpacer = false;
+                $scope.toggleItems = false;
+                $scope.enabled = { 'A': true, 'B': true, 'C': true, 'D': true, 'E': true, 'F': true, 'G': true, '1': true, '2': true, '3': true };
+                $scope.showAbsolute = true;
+                $scope.absolute = { x: 300, y: 1150 };
+                $scope.shiftRelative = false;
+                $scope.relative = { x: 125, y: 30 };
+
+                $scope.useOverlap = false;
+
+                $scope.target = {
+                    useOverlap: false,
+                    showControls: false,
+                    showAbsolute: false,
+                    absolute: { x: -1, y: 875 },
+                    showRelative: true,
+                    relative: { x: 150, y: 0 }
+                };
+
+                function resetScrollpoints(){
+                    $scope.$broadcast('scrollpointShouldReset');
+                }
+
+                // watch toggle controls
+                $scope.$watchGroup(['topSpacer', 'showAbsolute', 'shiftRelative', 'target.showAbsolute', 'target.showRelative'], resetScrollpoints);
+
+                // watch co-ordinate collections
+                $scope.$watchCollection('enabled', resetScrollpoints);
+                $scope.$watchCollection('absolute', resetScrollpoints);
+                $scope.$watchCollection('relative', resetScrollpoints);
+                $scope.$watchCollection('target.absolute', resetScrollpoints);
+                $scope.$watchCollection('target.relative', resetScrollpoints);
+
+                // initialize
+                $timeout(resetScrollpoints, 10);
+
+                angular.element($window).on('resize', resetScrollpoints)
+                
+            });
+        </script>
+        <style>
+            .demo {
+                background-color: #EEF;
+            }
+            div.demo.top {
+                border-top-width: 3px;
+            }
+            div.demo.bottom {
+                border-bottom-width: 3px;
+            }
+            div.demo.wide {
+                width: 300px;
+            }
+            div.demo.full {
+                margin: 0px;
+                width: 100%;
+            }
+            .demo.ui-scrollpoint {
+                background-color: #EFE;
+            }
+            .demo.my-scrollpoint {
+                background-color: #DFE;
+            }
+            .demo.another-scrollpoint {
+                border: 2px solid #3D3;
+            }  
+            .demo.in-view .id {
+                font-weight: bold;
+            }
+
+            .parent {
+                padding: 10px;
+                border: 1px solid #BBB;
+            }
+            .parent.relative {
+                position: relative;
+                background-color: #FEA;
+            }
+            .parent.absolute {
+                position: absolute;
+                background-color: #FE7;
+            }
+            .parent .demo {
+                background-color: #FF3;
+            }
+            .parent .demo.ui-scrollpoint.pinned {
+                background-color: #FF9;
+            }
+
+            .ui-scrollpoint.pinned {
+                margin: 0px;
+                z-index: 100;
+            }
+            .demo.pin-overlap,
+            .demo.pin-overlap.ui-scrollpoint.pinned {
+                position: relative;
+                z-index: 150;
+                opacity: 0.5;
+                color: #FFF;
+            }
+            .demo.pin-overlap {
+                background-color: #90D;
+            }
+            .demo.pin-overlap.ui-scrollpoint.pinned {
+                background-color: #8E0;
+            }
+
+            .demo.pin-grouped {
+                position: relative;
+                z-index: 150;
+                background-color: #0CF;
+            }
+            .demo.pin-grouped.ui-scrollpoint.pinned {
+                background-color: #00F;
+                color: #FFF;
+            }
+
+            .scrollpoint-target .demo.ui-scrollpoint {
+                background-color: #FED;
+            }
+            .scrollpoint-target .parent.absolute {
+                z-index: 10;
+                opacity: 0.9;
+            }
+            .scrollpoint-target .parent .demo {
+                background-color: #DF3;
+            }
+            .scrollpoint-target .parent .demo.ui-scrollpoint {
+                background-color: #DF9;
+            }
+
+            .demo.disabled {
+                background-color: #AAA;
+            }
+        </style>
+    </head>
+
+    <body class="container">
+        <section id="scrollpoint" ng-controller="scrollpointTest">
+            <h1>Scrollpoints</h1>
+
+            <div class="top-bar">
+                <div class="input pull-right">
+                    <label for="scrollpointValue">Scrollpoint:</label> <input type="text" ng-model="scrollpoint" id="scrollpointValue" placeholder="absolute, +, -, or %" />
+                </div>
+                <ul class="view-trackers pull-right">
+                    <li ng-repeat="view in views" ng-class="{in: inView[view]}">
+                        <strong>{{view}}:</strong> {{inView[view]}} <span ng-show="outView[view]">({{outView[view]}})</span>
+                    </li>
+                </ul>
+
+                <br style="clear:both;"/>
+
+                <div class="input pull-right">
+                    <label for="toggleItems">Toggle Items:</label> <input type="checkbox" ng-model="toggleItems" id="toggleItems" />
+
+                    <div ng-show="toggleItems">
+                        <div ng-repeat="(key,value) in enabled">
+                            <label for="enabled-{{key}}">Enable Item {{key}}:</label> <input type="checkbox" ng-model="enabled[key]" id="enabled-{{key}}" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="input pull-right">
+                    <label for="windowTopSpacer">Show top spacer:</label> <input type="checkbox" ng-model="topSpacer" id="windowTopSpacer" />
+                </div>
+
+                <div class="input pull-right">
+                    <label for="useOverlap">Use overlap:</label> <input type="checkbox" ng-model="useOverlap" id="useOverlap" />
+                </div>
+
+                <br style="clear:both;"/>
+
+                <div class="input pull-right">
+                    <label for="showAbsolute">Show absolute parent:</label> <input type="checkbox" ng-model="showAbsolute" id="showAbsolute" />
+                    <div ng-show="showAbsolute">
+                        <label for="absoluteX">X:</label> <input type="text" ng-model="absolute.x" id="absoluteX" /><br/>
+                        <label for="absoluteY">Y:</label> <input type="text" ng-model="absolute.y" id="absoluteY" />
+                    </div>
+                </div>
+
+                <br style="clear:both;"/>
+
+                <div class="input pull-right">
+                    <label for="shiftRelative">Shift relative parent:</label> <input type="checkbox" ng-model="shiftRelative" id="shiftRelative" />
+                    <div ng-show="shiftRelative">
+                        <label for="relativeX">X:</label> <input type="text" ng-model="relative.x" id="relativeX" /><br/>
+                        <label for="relativeY">Y:</label> <input type="text" ng-model="relative.y" id="relativeY" />
+                    </div>
+                </div>
+
+                <br style="clear:both;"/>
+
+                <div class="input pull-right">
+                    <label for="targetShowControls">Controls for Target:</label> <input type="checkbox" ng-model="target.showControls" id="targetShowControls" />
+                    <div ng-show="target.showControls">
+
+                        <div class="input pull-right">
+                            <label for="targetUseOverlap">Use overlap:</label> <input type="checkbox" ng-model="target.useOverlap" id="targetUseOverlap" />
+                        </div>
+
+                        <div class="input pull-right">
+                            <label for="targetShowAbsolute">Show absolute parent:</label> <input type="checkbox" ng-model="target.showAbsolute" id="targetShowAbsolute" />
+                            <div ng-show="target.showAbsolute">
+                                <label for="targetAbsoluteX">X:</label> <input type="text" ng-model="target.absolute.x" id="targetAbsoluteX" /><br/>
+                                <label for="targetAbsoluteY">Y:</label> <input type="text" ng-model="target.absolute.y" id="targetAbsoluteY" />
+                            </div>
+                        </div>
+
+                        <div class="input pull-right">
+                            <label for="targetShowRelative">Show relative parent:</label> <input type="checkbox" ng-model="target.showRelative" id="targetShowRelative" />
+                            <div ng-show="target.showRelative">
+                                <label for="targetRelativeX">X:</label> <input type="text" ng-model="target.relative.x" id="targetRelativeX" /><br/>
+                                <label for="targetRelativeY">Y:</label> <input type="text" ng-model="target.relative.y" id="targetRelativeY" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="spacer" ng-show="topSpacer"></div>
+
+            <div class="demo top" ui-scrollpoint="30" ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['D']}}">Item D</div>
+            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['A']}}">Item A</div>
+            <div class="demo top wide" ui-scrollpoint ui-scrollpoint-pin></div>
+            <div class="demo top" ui-scrollpoint="-10" ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['G']}}">Item G</div>
+
+            <br style="clear:both;"/>
+
+            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['E']}}">Item E</div>
+            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['B']}}">Item B</div>
+            <div class="demo top" style="height: 45px;" ui-scrollpoint="-5" ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['1']}}" ui-scrollpoint-pin-group="group1">Item #1</div>
+            <div class="demo top" ui-scrollpoint="-5" ui-scrollpoint-pin>Item L</div>
+            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin>Item H</div>
+            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin>Item J</div>
+
+            <br style="clear:both;"/>
+
+            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['F']}}">Item F</div>
+            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['C']}}">Item C</div>
+            <div class="demo top" style="height: 35px;" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['2']}}" ui-scrollpoint-pin-group="group1">Item #2</div>
+            <div class="demo top" ui-scrollpoint="+10" ui-scrollpoint-pin>Item M</div>
+            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin>Item I</div>
+            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin>Item K</div>
+
+            <br style="clear:both;"/>
+
+            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin></div>
+            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin></div>
+            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin></div>
+            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-overlap="{{useOverlap}}"></div>
+            <div class="demo top wide" ui-scrollpoint ui-scrollpoint-pin></div>
+
+            <br style="clear:both;"/>
+
+            <div class="demo top" ui-scrollpoint="-10" ui-scrollpoint-pin ui-scrollpoint-pin-overlap></div>
+            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-overlap></div>
+            <div class="demo top" style="height: 25px;" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['3']}}" ui-scrollpoint-pin-group="group1">Item #3</div>
+            <div class="demo top wide" ui-scrollpoint ui-scrollpoint-pin></div>
+            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin></div>
+
+            <br style="clear:both;"/>
+
+            <div class="demo disabled"></div>
+            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin></div>
+            <div class="demo top" ui-scrollpoint ui-scrollpoint-pin></div>
+
+            <br style="clear:both;"/>
+            <div class="spacer small"></div>
+
+            <div class="scrollpoint-target" ui-scrollpoint-target>
+                <h2>Scrollpoint Target</h2>
+
+                <div class="spacer small"></div>
+
+                <div class="demo top" ui-scrollpoint="15" ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['D']}}">Item D</div>
+                <div class="demo top" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['A']}}">Item A</div>
+                <div class="demo top wide" ui-scrollpoint ui-scrollpoint-pin></div>
+                <div class="demo top" ui-scrollpoint="-10" ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['G']}}">Item G</div>
+
+                <br style="clear:both;"/>
+
+                <div class="demo top" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['E']}}">Item E</div>
+                <div class="demo top" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['B']}}">Item B</div>
+                <div class="demo top" style="z-index: 150;" ui-scrollpoint="-5" ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['1']}}" ui-scrollpoint-pin-group="group2">Item #1</div>
+                <div class="demo top" ui-scrollpoint="-5" ui-scrollpoint-pin>Item L</div>
+                <div class="demo top" ui-scrollpoint ui-scrollpoint-pin>Item H</div>
+                <div class="demo top" ui-scrollpoint ui-scrollpoint-pin>Item J</div>
+
+                <br style="clear:both;"/>
+
+                <div class="demo top" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['F']}}">Item F</div>
+                <div class="demo top" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['C']}}">Item C</div>
+                <div class="demo top" style="z-index: 151;" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['2']}}" ui-scrollpoint-pin-group="group2">Item #2</div>
+                <div class="demo top" ui-scrollpoint="+10" ui-scrollpoint-pin>Item M</div>
+                <div class="demo top" ui-scrollpoint ui-scrollpoint-pin>Item I</div>
+                <div class="demo top" ui-scrollpoint ui-scrollpoint-pin>Item K</div>
+
+                <br style="clear:both;"/>
+
+                <div class="demo top" ui-scrollpoint ui-scrollpoint-pin></div>
+                <div class="demo top" ui-scrollpoint ui-scrollpoint-pin></div>
+                <div class="demo top" ui-scrollpoint ui-scrollpoint-pin></div>
+                <div class="demo top" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-overlap="{{useOverlap}}"></div>
+                <div class="demo top wide" ui-scrollpoint ui-scrollpoint-pin></div>
+
+                <br style="clear:both;"/>
+
+                <div class="demo top" ui-scrollpoint="-10" ui-scrollpoint-pin ui-scrollpoint-pin-overlap></div>
+                <div class="demo top" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-overlap></div>
+                <div class="demo top" style="z-index: 152;" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['3']}}" ui-scrollpoint-pin-group="group2">Item #3</div>
+                <div class="demo top wide" ui-scrollpoint ui-scrollpoint-pin></div>
+                <div class="demo top" ui-scrollpoint ui-scrollpoint-pin></div>
+
+                <br style="clear:both;"/>
+
+                <div class="demo disabled"></div>
+                <div class="demo top" ui-scrollpoint ui-scrollpoint-pin></div>
+                <div class="demo top" ui-scrollpoint ui-scrollpoint-pin></div>
+
+                <br style="clear:both;"/>
+                <div class="spacer small"></div>
+
+                <div class="relative parent" ng-show="target.showRelative" ng-style="{left: target.showRelative ? target.relative.x + 'px' : '', top: target.showRelative ? target.relative.y + 'px' : '', width: target.showRelative?'90%':''}">
+                    <h4>relatively positioned parent <em>(inside ui-scrollpoint-target)</em></h4>
+
+                    <div class="demo top" ui-scrollpoint="-5" ui-scrollpoint-pin ui-scrollpoint-enabled="{{target.showRelative}}">-5</div>
+                    <div class="demo top wide" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-enabled="{{target.showRelative}}"></div>
+                    <div class="demo top" ui-scrollpoint="+5" ui-scrollpoint-pin ui-scrollpoint-enabled="{{target.showRelative}}">+5</div>
+
+                    <br style="clear:both;"/>
+
+                    <div class="demo bottom" ui-scrollpoint="+5" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-enabled="{{target.showRelative}}">+5</div>
+                    <div class="demo bottom wide" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-enabled="{{target.showRelative}}"></div>
+                    <div class="demo bottom" ui-scrollpoint="-5" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-enabled="{{target.showRelative}}">-5</div>
+
+                    <br style="clear:both;"/>
+                </div>
+
+                <div class="absolute parent" ng-show="target.showAbsolute" ng-style="{left: target.showAbsolute ? target.absolute.x + 'px' : '', top: target.showAbsolute ? target.absolute.y + 'px' : ''}">
+                    <h4>absolutely positioned parent <em>(inside ui-scrollpoint-target)</em></h4>
+
+                    <div class="demo top" ui-scrollpoint="-5" ui-scrollpoint-pin ui-scrollpoint-enabled="{{target.showAbsolute}}" ui-scrollpoint-absolute="true">-5</div>
+                    <div class="demo top wide" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-enabled="{{target.showAbsolute}}" ui-scrollpoint-absolute="true"></div>
+                    <div class="demo top" ui-scrollpoint="+5" ui-scrollpoint-pin ui-scrollpoint-enabled="{{target.showAbsolute}}" ui-scrollpoint-absolute="true">+5</div>
+
+                    <br style="clear:both;"/>
+
+                    <div class="demo bottom" ui-scrollpoint="+5" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-enabled="{{target.showAbsolute}}" ui-scrollpoint-absolute="true">+5</div>
+                    <div class="demo bottom wide" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-enabled="{{target.showAbsolute}}" ui-scrollpoint-absolute="true"></div>
+                    <div class="demo bottom" ui-scrollpoint="-5" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-enabled="{{target.showAbsolute}}" ui-scrollpoint-absolute="true">-5</div>
+
+                    <br style="clear:both;"/>
+                </div>
+
+                <br style="clear:both;"/>
+                <div class="spacer small"></div>
+
+                <div class="demo disabled"></div>
+                <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin></div>
+                <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin></div>
+
+                <br style="clear:both;"/>
+
+                <div class="demo bottom" ui-scrollpoint="+10" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-overlap></div>
+                <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-overlap></div>
+                <div class="demo bottom" style="z-index: 152;" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['3']}}" ui-scrollpoint-pin-group="group4">Item #3</div>
+                <div class="demo bottom wide" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin></div>
+                <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin></div>
+
+                <br style="clear:both;"/>
+
+                <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin></div>
+                <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin></div>
+                <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin></div>
+                <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-overlap="{{useOverlap}}"></div>
+                <div class="demo bottom wide" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin></div>
+
+                <br style="clear:both;"/>
+
+                <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['F']}}">Item F</div>
+                <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['C']}}">Item C</div>
+                <div class="demo bottom" style="z-index: 151;" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['2']}}" ui-scrollpoint-pin-group="group4">Item #2</div>
+                <div class="demo bottom" ui-scrollpoint="-10" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin>Item M</div>
+                <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin>Item I</div>
+                <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin>Item K</div>
+
+                <br style="clear:both;"/>
+
+                <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['E']}}">Item E</div>
+                <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['B']}}">Item B</div>
+                <div class="demo bottom" style="z-index: 150;" ui-scrollpoint="+5" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['1']}}" ui-scrollpoint-pin-group="group4">Item #1</div>
+                <div class="demo bottom" ui-scrollpoint="+5" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin>Item L</div>
+                <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin>Item H</div>
+                <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin>Item J</div>
+
+                <br style="clear:both;"/>
+
+                <div class="demo bottom" ui-scrollpoint="15" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['D']}}">Item D</div>
+                <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['A']}}">Item A</div>
+                <div class="demo bottom wide" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin></div>
+                <div class="demo bottom" ui-scrollpoint="+10" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['G']}}">Item G</div>
+
+                <br style="clear:both;"/>
+            </div>
+            
+            <div class="spacer small"></div>
+
+            <div class="relative parent" ng-style="{left: shiftRelative ? relative.x + 'px' : '', top: shiftRelative ? relative.y + 'px' : '', width: shiftRelative?'90%':''}">
+                <h4>relatively positioned parent</h4>
+
+                <div class="demo top" ui-scrollpoint="-5" ui-scrollpoint-pin>-5</div>
+                <div class="demo top wide" ui-scrollpoint ui-scrollpoint-pin></div>
+                <div class="demo top" ui-scrollpoint="+5" ui-scrollpoint-pin>+5</div>
+
+                <br style="clear:both;"/>
+
+                <div class="demo bottom" ui-scrollpoint="+5" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin>+5</div>
+                <div class="demo bottom wide" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin></div>
+                <div class="demo bottom" ui-scrollpoint="-5" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin>-5</div>
+
+                <br style="clear:both;"/>
+            </div>
+
+            <div class="absolute parent" ng-show="showAbsolute" ng-style="{left: absolute.x + 'px', top: absolute.y + 'px'}">
+                <h4>absolutely positioned parent</h4>
+
+                <div class="demo top" ui-scrollpoint="-5" ui-scrollpoint-pin ui-scrollpoint-enabled="{{showAbsolute}}">-5</div>
+                <div class="demo top wide" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-enabled="{{showAbsolute}}"></div>
+                <div class="demo top" ui-scrollpoint="+5" ui-scrollpoint-pin ui-scrollpoint-enabled="{{showAbsolute}}">+5</div>
+
+                <br style="clear:both;"/>
+
+                <div class="demo bottom" ui-scrollpoint="+5" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-enabled="{{showAbsolute}}">+5</div>
+                <div class="demo bottom wide" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-enabled="{{showAbsolute}}"></div>
+                <div class="demo bottom" ui-scrollpoint="-5" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-enabled="{{showAbsolute}}">-5</div>
+            </div>
+
+            <div class="spacer"></div>
+
+            <div class="demo disabled"></div>
+            <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin></div>
+            <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin></div>
+
+            <br style="clear:both;"/>
+
+            <div class="demo bottom" ui-scrollpoint="+10" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-overlap></div>
+            <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-overlap></div>
+            <div class="demo bottom" style="height: 25px; z-index: 152;" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['3']}}" ui-scrollpoint-pin-group="group3">Item #3</div>
+            <div class="demo bottom wide" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin></div>
+            <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin></div>
+
+            <br style="clear:both;"/>
+
+            <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin></div>
+            <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin></div>
+            <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin></div>
+            <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-overlap="{{useOverlap}}"></div>
+            <div class="demo bottom wide" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin></div>
+
+            <br style="clear:both;"/>
+
+            <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['F']}}">Item F</div>
+            <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['C']}}">Item C</div>
+            <div class="demo bottom" style="height: 35px; z-index: 151;" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['2']}}" ui-scrollpoint-pin-group="group3">Item #2</div>
+            <div class="demo bottom" ui-scrollpoint="-10" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin>Item M</div>
+            <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin>Item I</div>
+            <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin>Item K</div>
+
+            <br style="clear:both;"/>
+
+            <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['E']}}">Item E</div>
+            <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['B']}}">Item B</div>
+            <div class="demo bottom" style="height: 45px; z-index: 150;" ui-scrollpoint="+5" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['1']}}" ui-scrollpoint-pin-group="group3">Item #1</div>
+            <div class="demo bottom" ui-scrollpoint="+5" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin>Item L</div>
+            <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin>Item H</div>
+            <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin>Item J</div>
+
+            <br style="clear:both;"/>
+
+            <div class="demo bottom" ui-scrollpoint="15" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['D']}}">Item D</div>
+            <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['A']}}">Item A</div>
+            <div class="demo bottom wide" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin></div>
+            <div class="demo bottom" ui-scrollpoint="+10" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-enabled="{{enabled['G']}}">Item G</div>
+
+            <br style="clear:both;"/>
+            <div class="spacer small"></div>
+            <br style="clear:both;"/>
+        </section>
+    </body>
+</html>

@@ -430,7 +430,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     return (offset ? offset : 0);
                 },
                 shouldStack: function(pin, edge, against){
-                    if(against.isPinned() && pin != against){
+                    if(against.isPinned() && pin != against && pin.stackGroupMatches(against.stackGroup)){
                         if(against.group){
                             against = against.group.getFirst(edge);
                         }
@@ -547,6 +547,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
 
             this.edge = undefined;
             this.offset = {};
+            this.stackGroup = undefined;
 
             var origCss = {};
             var pinToTarget = false;
@@ -567,6 +568,25 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
             };
             this.setScrollpoint = function(uiScrollpoint){
                 this.$uiScrollpoint = uiScrollpoint;
+            };
+            this.setStackGroup = function(stackId){
+                if(stackId && !angular.isArray(stackId)){
+                    stackId = [stackId];
+                }
+                this.stackGroup = stackId;
+            };
+            this.stackGroupMatches = function(stackGroup){
+                if(this.stackGroup && stackGroup){
+                    for(var i in this.stackGroup){
+                        if(stackGroup.indexOf(this.stackGroup[i]) != -1){
+                            return true;
+                        }
+                    }
+                }
+                else if(angular.isUndefined(this.stackGroup)){
+                    return true;
+                }
+                return false;
             };
             this.getBounds = function(){
                 if(this.$element){
@@ -681,6 +701,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
             var uiScrollpointPin = Ctrl[1];
 
             var groupId;
+            var stackId;
 
             // setup the controller
             uiScrollpointPin.setAttrs(attrs);
@@ -761,6 +782,17 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     Pin.Groups.unregister(uiScrollpointPin, groupId);
                     groupId = undefined;
                 }
+            });
+
+            // ui-scrollpoint-pin-stack attribute
+            attrs.$observe('uiScrollpointPinStack', function(pinStack){
+                if(pinStack){
+                    stackId = pinStack.replace(/[^a-zA-Z0-9-,]/g, '-').split(',');
+                }
+                else{
+                    stackId = undefined;
+                }
+                uiScrollpointPin.setStackGroup(stackId);
             });
 
             // create a scrollpoint action that pins the element
