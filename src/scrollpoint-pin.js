@@ -501,7 +501,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                 getStackBottom: function(pin, scroll_edge){
                     var bottomItem = pin;
                     var item;
-                    while(item = this.getStackedUnder(bottomItem, scroll_edge)){
+                    while((item = this.getStackedUnder(bottomItem, scroll_edge))){
                         bottomItem = item;
                     }
                     return bottomItem;
@@ -509,14 +509,14 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                 getStackTop: function(pin, scroll_edge){
                     var topItem = pin;
                     var item;
-                    while(item = topItem.stackTarget){
+                    while((item = topItem.stackTarget)){
                         topItem = item;
                     }
                     return topItem;
                 },
                 refreshAllowances: function(pin, scroll_edge){
                     var item = pin;                    
-                    while(item = item.stackTarget){
+                    while((item = item.stackTarget)){
                         item.calculateScrollAllowance();
                     }
                 },
