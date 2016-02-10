@@ -379,18 +379,24 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                         for(var elem_edge in elem_edges){
                             var edge = pin.$uiScrollpoint.getEdge(scroll_edge, elem_edge);
                             if(edge && !edge.absolute){
-                                var shift = this.calculateShift(pin, scroll_edge);
-                                var origEdge = this.getOriginalEdge(pin, scroll_edge, elem_edge);
-                                var newShift = (origEdge?origEdge.shift:0) - shift;
-                                if(new_edges[scroll_edge][elem_edge].shift != newShift){
-                                    new_edges[scroll_edge][elem_edge] = {
-                                        shift: newShift,
-                                        absolute: false,
-                                        percent: false,
-                                        pin_shift: true
-                                    };
+                                var stackItem = this.getStackTarget(pin, scroll_edge);
+                                pin.stackTarget = stackItem;
+                                if(stackItem){
+                                    var shift = this.calculateShift(pin, stackItem, scroll_edge);
+                                    if(angular.isDefined(shift)){
+                                        var origEdge = this.getOriginalEdge(pin, scroll_edge, elem_edge);
+                                        var newShift = (origEdge?origEdge.shift:0) - shift;
+                                        if(new_edges[scroll_edge][elem_edge].shift != newShift){
+                                            new_edges[scroll_edge][elem_edge] = {
+                                                shift: newShift,
+                                                absolute: false,
+                                                percent: false,
+                                                pin_shift: true
+                                            };
 
-                                    edges_changed = true;
+                                            edges_changed = true;
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -399,8 +405,31 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                         }
                     }
                 },
-                calculateShift: function(pin, scroll_edge){
-                    var offset;
+                calculateShift: function(pin, stackPin, scroll_edge){
+                    var shift;
+                    var shiftBounds = stackPin.getBounds();
+                    if(scroll_edge == 'top'){
+                        shift = shiftBounds.bottom;
+                    }
+                    else if(scroll_edge == 'bottom'){
+                        shift = shiftBounds.top;
+                    }
+                    if(angular.isDefined(stackPin.overflow)){
+                        shift += stackPin.overflow;
+                    }
+                    if(angular.isDefined(shift)){
+                        if(pin.$uiScrollpoint.hasTarget){
+                            var targetBounds = pin.$uiScrollpoint.$target[0].getBoundingClientRect();
+                            shift -= targetBounds.top;
+                        }
+                        if(scroll_edge == 'bottom'){
+                            shift -= pin.$uiScrollpoint.getTargetHeight();
+                        }
+                    }
+                    return shift;
+                },
+                getStackTarget: function(pin, scroll_edge){
+                    var stackItem, offset;
                     if(this.stacked[scroll_edge]){
                         for(var i in this.stacked[scroll_edge]){
                             var item = this.stacked[scroll_edge][i];
@@ -411,23 +440,16 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                                 var shiftBounds = item.getBounds();
                                 if(scroll_edge == 'top' && (angular.isUndefined(offset) || shiftBounds.bottom >= offset)){
                                     offset = shiftBounds.bottom;
+                                    stackItem = item;
                                 }
                                 else if(scroll_edge == 'bottom' && (angular.isUndefined(offset) || shiftBounds.top <= offset)){
                                     offset = shiftBounds.top;
+                                    stackItem = item;
                                 }
                             }
                         }
-                        if(angular.isDefined(offset)){
-                            if(pin.$uiScrollpoint.hasTarget){
-                                var targetBounds = pin.$uiScrollpoint.$target[0].getBoundingClientRect();
-                                offset -= targetBounds.top;
-                            }
-                            if(scroll_edge == 'bottom'){
-                                offset -= pin.$uiScrollpoint.getTargetHeight();
-                            }
-                        }
                     }
-                    return (offset ? offset : 0);
+                    return stackItem;
                 },
                 shouldStack: function(pin, edge, against){
                     if(against.isPinned() && pin != against && pin.stackGroupMatches(against.stackGroup)){
@@ -455,6 +477,50 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     return false;
                 },
 
+                getStackedUnder: function(pin, scroll_edge){
+                    if(this.stacked[scroll_edge]){
+                        // find the lowest item stacked on pin
+                        var offset, lowestItem;
+                        for(var i in this.stacked[scroll_edge]){
+                            var item = this.stacked[scroll_edge][i];
+                            if(item.stackTarget == pin){
+                                var stackedBounds = item.getBounds();
+                                if(scroll_edge == 'top' && (angular.isUndefined(offset) || stackedBounds.bottom >= offset)){
+                                    offset = stackedBounds.bottom;
+                                    lowestItem = item;
+                                }
+                                else if(scroll_edge == 'bottom' && (angular.isUndefined(offset) || stackedBounds.top <= offset)){
+                                    offset = stackedBounds.top;
+                                    lowestItem = item;
+                                }
+                            }
+                        }
+                        return lowestItem;
+                    }
+                },
+                getStackBottom: function(pin, scroll_edge){
+                    var bottomItem = pin;
+                    var item;
+                    while(item = this.getStackedUnder(bottomItem, scroll_edge)){
+                        bottomItem = item;
+                    }
+                    return bottomItem;
+                },
+                getStackTop: function(pin, scroll_edge){
+                    var topItem = pin;
+                    var item;
+                    while(item = topItem.stackTarget){
+                        topItem = item;
+                    }
+                    return topItem;
+                },
+                refreshAllowances: function(pin, scroll_edge){
+                    var item = pin;                    
+                    while(item = item.stackTarget){
+                        item.calculateScrollAllowance();
+                    }
+                },
+
                 pinned: function(pin, edge){
                     if(edge.scroll){
                         if(angular.isUndefined(this.stacked[edge.scroll])){
@@ -462,12 +528,13 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                         }
                         var pinnedIdx = this.stacked[edge.scroll].indexOf(pin);
                         if(pinnedIdx == -1){
-                            var checkEdge = pin.$uiScrollpoint.getEdge(edge.scroll, edge.element);
+                            //var checkEdge = pin.$uiScrollpoint.getEdge(edge.scroll, edge.element);
                             // add this pin to the stack
                             this.stacked[edge.scroll].push(pin);
                             var self = this;
                             $timeout(function(){
                                 self.refreshEdges(pin, edge);
+                                self.refreshAllowances(pin, edge);
                             }, 150);
                         }
                     }
@@ -480,7 +547,11 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                             var self = this;
                             $timeout(function(){
                                 self.refreshEdges(pin, edge);
+                                //self.refreshAllowances(pin, edge);
                             });
+                            $timeout(function(){
+                                self.refreshAllowances(pin, edge);
+                            }, 151);
                         }
                     }
                 }
@@ -547,16 +618,81 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
 
             this.edge = undefined;
             this.offset = {};
+            this.allowance = 0;
+            self.overflow = 0;
             this.stackGroup = undefined;
 
             var origCss = {};
             var pinToTarget = false;
 
+            var lastScrollOffset;
             this.repositionPinned = function(){
                 if(self.$placeholder && self.$uiScrollpoint){
+                    if(angular.isUndefined(lastScrollOffset)){
+                        lastScrollOffset = 0;
+                    }
+                    var scrollDistance = (self.$uiScrollpoint.getScrollOffset() - lastScrollOffset);
                     var scrollOffset = self.$uiScrollpoint.hasTarget ? 0 : self.$uiScrollpoint.getScrollOffset();
+                    var newTop = (scrollOffset-self.offset.y);
+
+                    lastScrollOffset = self.$uiScrollpoint.getScrollOffset();
+
+                    if(self.allowance){
+                        self.overflow += scrollDistance;
+
+                        if(self.edge && self.edge.scroll == 'top'){
+                            if(self.overflow > self.allowance){
+                                self.overflow = self.allowance;
+                            }
+                            if(self.overflow > 0){
+                                newTop -= self.overflow;
+                            }
+                        }
+                        else if(self.edge && self.edge.scroll == 'bottom'){
+                            if(self.overflow < self.allowance){
+                                self.overflow = self.allowance;
+                            }
+                            if(self.overflow < 0){
+                                newTop -= self.overflow;
+                            }
+                        }
+                    }
+
                     self.$element.css('left', (self.offset.x)+'px');
-                    self.$element.css('top', (scrollOffset-self.offset.y)+'px');
+                    self.$element.css('top', newTop+'px');
+                }
+            };
+            this.calculateScrollAllowance = function(){
+                if(self.stack && self.$element && self.edge){
+                    var origAllowance = self.allowance;
+                    var stackTop = self.stack.getStackTop(self, self.edge.scroll);
+                    var stackBottom = self.stack.getStackBottom(self, self.edge.scroll);
+                    if(self.edge.scroll == 'bottom' && stackTop != stackBottom){
+                        var tmp = stackTop;
+                        stackTop = stackBottom;
+                        stackBottom = tmp;
+                    }
+                    var top = 0, bottom = 0;
+                    if(stackTop){
+                        var topBounds = stackTop.getBounds();
+                        top = topBounds.top + stackTop.overflow;
+                    }
+                    if(stackBottom){
+                        var bottomBounds = stackBottom.getBounds();
+                        bottom = bottomBounds.bottom + stackBottom.overflow;
+                    }
+                    var stackHeight = bottom - top;
+                    var targetHeight = self.$uiScrollpoint.getTargetHeight();
+
+                    self.allowance = (stackHeight > targetHeight) ? (stackHeight - targetHeight) : 0;
+                    if(self.edge.scroll == 'bottom'){
+                        self.allowance *= -1.0;
+                    }                    
+
+                    if(self.allowance != origAllowance){
+                        // allowance changed, reposition accordingly
+                        self.repositionPinned();
+                    }
                 }
             };
 
@@ -656,6 +792,11 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     this.$uiScrollpoint.$target.on('scroll', self.repositionPinned);
                     self.repositionPinned();
 
+                    this.$uiScrollpoint.$target.on('resize', self.calculateScrollAllowance);
+                    $timeout(function(){
+                        self.calculateScrollAllowance();
+                    }, 151);
+
                     // notify the Pin service that it is pinned
                     Pin.pinned(this, this.edge, distance);
                 }
@@ -663,9 +804,13 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
 
             this.unpin = function(){
                 if(this.$placeholder && this.$element && this.$uiScrollpoint){
-
                     // stop adjusting absolute position when target scrolls
                     this.$uiScrollpoint.$target.off('scroll', self.repositionPinned);
+                    lastScrollOffset = undefined;
+                    this.overflow = 0;
+
+                    this.$uiScrollpoint.$target.off('resize', self.calculateScrollAllowance);
+                    this.allowance = 0;
 
                     // reset element to unpinned state
                     this.$element.removeClass('pinned');
