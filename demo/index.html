@@ -122,6 +122,13 @@
             div.demo.x-tall {
                 height: 75px;
             }
+            div.demo.long {
+                height: 500px;
+            }
+            .demo.long.bottom {
+                position: relative;
+                left: -60px;
+            }
             .demo.ui-scrollpoint {
                 background-color: #EFE;
             }
@@ -276,6 +283,8 @@
             <div class="demo top" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-stack="group4">4.0</div>
             <div class="demo top" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-stack="group5">5.0</div>
 
+            <div class="demo top long wide" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-stack="group6">6.0</div>
+
             <br style="clear:both;"/>
 
             <div class="demo top" ui-scrollpoint="+5" ui-scrollpoint-pin>1.1</div>
@@ -283,6 +292,7 @@
             <div class="demo top slim" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-stack="group3">3.1</div>
             <div class="demo top medium x-tall" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-stack="group4">4.1</div>
             <div class="demo top" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-stack="group5">5.1</div>
+            <div class="demo top long wide" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-stack="group6">6.1</div>
 
             <br style="clear:both;"/>
 
@@ -348,6 +358,11 @@
             <div class="spacer"></div>
 
             <!-- bottom set -->
+            <div class="demo bottom long slim" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-stack="group7">7.0</div>
+
+            <br style="clear:both;"/>
+
+            <div class="demo bottom long slim" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-stack="group7">7.1</div>
 
             <br style="clear:both;"/>
             <div class="spacer small"></div>
