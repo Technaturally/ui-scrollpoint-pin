@@ -181,15 +181,32 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                 }
             };
         },
-        register: function(pin, groupId){
-            if(angular.isUndefined(this.groups[groupId])){
-                this.groups[groupId] = this.newGroup(groupId);
+        getGroupSet: function(pin){
+            var groups;
+            if(pin.$uiScrollpoint && pin.$uiScrollpoint.hasTarget && pin.$uiScrollpoint.$target){
+                if(angular.isUndefined(pin.$uiScrollpoint.$target.groups)){
+                    pin.$uiScrollpoint.$target.groups = {};
+                }
+                groups = pin.$uiScrollpoint.$target.groups;
             }
-            this.groups[groupId].addItem(pin);
+            else{
+                groups = this.groups;
+            }
+            return groups;
+        },
+        register: function(pin, groupId){
+            var groups = this.getGroupSet(pin);
+
+            if(angular.isUndefined(groups[groupId])){
+                groups[groupId] = this.newGroup(groupId);
+            }
+            groups[groupId].addItem(pin);
         },
         unregister: function(pin, groupId){
-            if(groupId && angular.isDefined(this.groups[groupId])){
-                this.groups[groupId].removeItem(pin);
+            var groups = this.getGroupSet(pin);
+
+            if(groupId && angular.isDefined(groups[groupId])){
+                groups[groupId].removeItem(pin);
             }
             else if(!groupId && pin.group){
                 pin.group.removeItem(pin);
