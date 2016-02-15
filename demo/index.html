@@ -11,7 +11,7 @@
 
         <!-- ui-scrollpoint files -->
         <script src="../bower_components/angular-ui-scrollpoint/dist/scrollpoint.js"></script>
-        <script src="../dist/scrollpoint-pin.js"></script>
+        <script src="../src/scrollpoint-pin.js"></script>
         <script>
             var app = angular.module('demo', ['ui.scrollpoint.pin']);
             app.controller( 'scrollpointTest', function($scope, $timeout, $window){
@@ -57,7 +57,7 @@
                 $scope.toggleItems = false;
                 $scope.enabled = { 'A': true, 'B': true, 'C': true, 'D': true, 'E': true, 'F': true, 'G': true, '1': true, '2': true, '3': true };
                 $scope.showAbsolute = true;
-                $scope.absolute = { x: 300, y: 1150 };
+                $scope.absolute = { x: 10, y: 1150 };
                 $scope.shiftRelative = false;
                 $scope.relative = { x: 125, y: 30 };
 
@@ -69,11 +69,18 @@
                     showAbsolute: false,
                     absolute: { x: -1, y: 875 },
                     showRelative: true,
-                    relative: { x: 150, y: 0 }
+                    relative: { x: 100, y: 0 }
                 };
 
+                var reset = false;
                 function resetScrollpoints(){
-                    $scope.$broadcast('scrollpointShouldReset');
+                    if(!reset){
+                        $scope.$broadcast('scrollpointShouldReset');
+                        reset = true;
+                        $timeout(function(){
+                            reset = false;
+                        },5);
+                    }
                 }
 
                 // watch toggle controls
@@ -283,7 +290,7 @@
             <div class="demo top" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-stack="group4">4.0</div>
             <div class="demo top" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-stack="group5">5.0</div>
 
-            <div class="demo top long wide" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-stack="group6">6.0</div>
+            <!--div class="demo top long wide" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-stack="group6">6.0</div-->
 
             <br style="clear:both;"/>
 
@@ -292,7 +299,7 @@
             <div class="demo top slim" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-stack="group3">3.1</div>
             <div class="demo top medium x-tall" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-stack="group4">4.1</div>
             <div class="demo top" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-stack="group5">5.1</div>
-            <div class="demo top long wide" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-stack="group6">6.1</div>
+            <!--div class="demo top long wide" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-stack="group6">6.1</div-->
 
             <br style="clear:both;"/>
 
@@ -311,6 +318,31 @@
                 <div class="spacer small"></div>
 
                 <!-- targetted top set -->
+                <div class="demo top" ui-scrollpoint ui-scrollpoint-pin>1.0</div>
+                <div class="demo top" ui-scrollpoint="-5" ui-scrollpoint-pin ui-scrollpoint-pin-group="group2a">2.0</div>
+                <div class="demo top tall" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-stack="group3">3.0</div>
+                <div class="demo top" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-stack="group4">4.0</div>
+                <div class="demo top" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-stack="group5">5.0</div>
+
+                <!--div class="demo top long wide" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-stack="group6">6.0</div-->
+
+                <br style="clear:both;"/>
+
+                <div class="demo top" ui-scrollpoint="+5" ui-scrollpoint-pin>1.1</div>
+                <div class="demo top" ui-scrollpoint="-5" ui-scrollpoint-pin ui-scrollpoint-pin-group="group2a">2.1</div>
+                <div class="demo top slim" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-stack="group3">3.1</div>
+                <div class="demo top medium x-tall" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-stack="group4">4.1</div>
+                <div class="demo top" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-stack="group5">5.1</div>
+                <!--div class="demo top long wide" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-stack="group6">6.1</div-->
+
+                <br style="clear:both;"/>
+
+
+                <div class="demo top" ui-scrollpoint="+5" ui-scrollpoint-pin>1.2</div>
+                <div class="demo top" ui-scrollpoint="-5" ui-scrollpoint-pin ui-scrollpoint-pin-group="group2a">2.2</div>
+                <div class="demo top tall" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-stack="group3,group4">3.2</div>
+                <div class="demo top" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-stack="group4">4.2</div>
+                <div class="demo top" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-stack="group5">5.2</div>
 
                 <br style="clear:both;"/>
                 <div class="spacer small"></div>
@@ -320,6 +352,16 @@
 
                     <!-- targetted + relatively positioned -->
 
+                    <div class="demo top" ui-scrollpoint="-5" ui-scrollpoint-pin>R-A</div>
+                    <div class="demo top bottom wide" ui-scrollpoint ui-scrollpoint-edge="['top','bottom']" ui-scrollpoint-pin>R-B</div>
+                    <div class="demo top" ui-scrollpoint="+5" ui-scrollpoint-pin>R-C</div>
+
+                    <br style="clear:both;"/>
+
+                    <div class="demo bottom" ui-scrollpoint="+5" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin>R-D</div>
+                    <div class="demo top bottom wide" ui-scrollpoint ui-scrollpoint-edge="['top','bottom']" ui-scrollpoint-pin>R-E</div>
+                    <div class="demo bottom" ui-scrollpoint="-5" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin>R-F</div>
+
                     <br style="clear:both;"/>
                 </div>
 
@@ -327,14 +369,49 @@
                     <h4>absolutely positioned parent <em>(inside ui-scrollpoint-target)</em></h4>
 
                     <!-- targetted + absolutely positioned -->
+                    <div class="demo top" ui-scrollpoint="-5" ui-scrollpoint-pin ui-scrollpoint-pin ui-scrollpoint-enabled="{{target.showAbsolute}}" ui-scrollpoint-absolute="true">A-A</div>
+                    <div class="demo top bottom wide" ui-scrollpoint ui-scrollpoint-edge="['top','bottom']" ui-scrollpoint-pin ui-scrollpoint-pin ui-scrollpoint-enabled="{{target.showAbsolute}}" ui-scrollpoint-absolute="true">A-B</div>
+                    <div class="demo top" ui-scrollpoint="+5" ui-scrollpoint-pin ui-scrollpoint-pin ui-scrollpoint-enabled="{{target.showAbsolute}}" ui-scrollpoint-absolute="true">A-C</div>
+
+                    <br style="clear:both;"/>
+
+                    <div class="demo bottom" ui-scrollpoint="+5" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-enabled="{{showAbsolute}}" ui-scrollpoint-absolute="true">A-D</div>
+                    <div class="demo top bottom wide" ui-scrollpoint ui-scrollpoint-edge="['top','bottom']" ui-scrollpoint-pin ui-scrollpoint-enabled="{{showAbsolute}}" ui-scrollpoint-absolute="true">A-E</div>
+                    <div class="demo bottom" ui-scrollpoint="-5" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-enabled="{{showAbsolute}}" ui-scrollpoint-absolute="true">A-F</div>
 
                     <br style="clear:both;"/>
                 </div>
 
                 <br style="clear:both;"/>
                 <div class="spacer small"></div>
+                <div class="spacer"></div>
 
                 <!-- targetted bottom set -->
+
+                <div class="demo bottom" ui-scrollpoint="-5" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin>1.2</div>
+                <div class="demo bottom" ui-scrollpoint="+5" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-group="group2a">2.2</div>
+                <div class="demo bottom tall" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-stack="group3,group4">3.2</div>
+                <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-stack="group4">4.2</div>
+                <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-stack="group5">5.2</div>
+
+                <!--div class="demo top long wide" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-stack="group6">6.0</div-->
+
+                <br style="clear:both;"/>
+
+                <div class="demo bottom" ui-scrollpoint="-5" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin>1.1</div>
+                <div class="demo bottom" ui-scrollpoint="+5" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-group="group2a">2.1</div>
+                <div class="demo bottom slim" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-stack="group3">3.1</div>
+                <div class="demo bottom medium x-tall" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-stack="group4">4.1</div>
+                <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-stack="group5">5.1</div>
+                <!--div class="demo top long wide" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-stack="group6">6.1</div-->
+
+                <br style="clear:both;"/>
+
+                <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin>1.0</div>
+                <div class="demo bottom" ui-scrollpoint="+5" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-group="group2a">2.0</div>
+                <div class="demo bottom tall" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-stack="group3">3.0</div>
+                <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-stack="group4">4.0</div>
+                <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-stack="group5">5.0</div>
 
                 <br style="clear:both;"/>
             </div>
@@ -345,6 +422,15 @@
                 <h4>relatively positioned parent</h4>
 
                 <!-- relatively positioned -->
+                <div class="demo top" ui-scrollpoint="-5" ui-scrollpoint-pin>R-A</div>
+                <div class="demo top bottom wide" ui-scrollpoint ui-scrollpoint-edge="['top','bottom']" ui-scrollpoint-pin>R-B</div>
+                <div class="demo top" ui-scrollpoint="+5" ui-scrollpoint-pin>R-C</div>
+
+                <br style="clear:both;"/>
+
+                <div class="demo bottom" ui-scrollpoint="+5" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin>R-D</div>
+                <div class="demo top bottom wide" ui-scrollpoint ui-scrollpoint-edge="['top','bottom']" ui-scrollpoint-pin>R-E</div>
+                <div class="demo bottom" ui-scrollpoint="-5" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin>R-F</div>
 
                 <br style="clear:both;"/>
             </div>
@@ -353,16 +439,55 @@
                 <h4>absolutely positioned parent</h4>
 
                 <!-- absolutely positioned -->
+                <div class="demo top" ui-scrollpoint="-5" ui-scrollpoint-pin ui-scrollpoint-enabled="{{showAbsolute}}">A-A</div>
+                <div class="demo top bottom wide" ui-scrollpoint ui-scrollpoint-edge="['top','bottom']" ui-scrollpoint-pin ui-scrollpoint-enabled="{{showAbsolute}}">A-B</div>
+                <div class="demo top" ui-scrollpoint="+5" ui-scrollpoint-pin ui-scrollpoint-enabled="{{showAbsolute}}">A-C</div>
+
+                <br style="clear:both;"/>
+
+                <div class="demo bottom" ui-scrollpoint="+5" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-enabled="{{showAbsolute}}">A-D</div>
+                <div class="demo top bottom wide" ui-scrollpoint ui-scrollpoint-edge="['top','bottom']" ui-scrollpoint-pin ui-scrollpoint-enabled="{{showAbsolute}}">A-E</div>
+                <div class="demo bottom" ui-scrollpoint="-5" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-enabled="{{showAbsolute}}">A-F</div>
+
+                <br style="clear:both;"/>
             </div>
 
             <div class="spacer"></div>
 
             <!-- bottom set -->
+        <!--
             <div class="demo bottom long slim" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-stack="group7">7.0</div>
 
             <br style="clear:both;"/>
 
             <div class="demo bottom long slim" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-stack="group7">7.1</div>
+        -->
+
+
+            <div class="demo bottom" ui-scrollpoint="-5" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin>1.2</div>
+            <div class="demo bottom" ui-scrollpoint="+5" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-group="group2">2.2</div>
+            <div class="demo bottom tall" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-stack="group3,group4">3.2</div>
+            <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-stack="group4">4.2</div>
+            <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-stack="group5">5.2</div>
+
+            <!--div class="demo top long wide" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-stack="group6">6.0</div-->
+
+            <br style="clear:both;"/>
+
+            <div class="demo bottom" ui-scrollpoint="-5" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin>1.1</div>
+            <div class="demo bottom" ui-scrollpoint="+5" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-group="group2">2.1</div>
+            <div class="demo bottom slim" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-stack="group3">3.1</div>
+            <div class="demo bottom medium x-tall" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-stack="group4">4.1</div>
+            <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-stack="group5">5.1</div>
+            <!--div class="demo top long wide" ui-scrollpoint ui-scrollpoint-pin ui-scrollpoint-pin-stack="group6">6.1</div-->
+
+            <br style="clear:both;"/>
+
+            <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin>1.0</div>
+            <div class="demo bottom" ui-scrollpoint="+5" ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-group="group2">2.0</div>
+            <div class="demo bottom tall" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-stack="group3">3.0</div>
+            <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-stack="group4">4.0</div>
+            <div class="demo bottom" ui-scrollpoint ui-scrollpoint-edge="bottom" ui-scrollpoint-pin ui-scrollpoint-pin-stack="group5">5.0</div>
 
             <br style="clear:both;"/>
             <div class="spacer small"></div>
