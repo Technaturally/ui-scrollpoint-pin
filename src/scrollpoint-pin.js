@@ -349,6 +349,28 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     }
                 },
 
+                assignStacked: function(pin, scroll_edge){
+                    var stackTarget = this.getStackTarget(pin, scroll_edge);
+                    pin.stackedOn = (stackTarget && stackTarget != pin) ? stackTarget : null;
+                    if(pin.stackedOn){
+                        if(angular.isUndefined(pin.stackedOn.stackedUnder)){
+                            pin.stackedOn.stackedUnder = [];
+                        }
+                        if(pin.stackedOn.stackedUnder.indexOf(pin) == -1){
+                            pin.stackedOn.stackedUnder.push(pin);
+                        }
+                    }
+                },
+                unassignStacked: function(pin, scroll_edge){
+                    if(pin.stackedOn && pin.stackedOn.stackedUnder){
+                        var pinIdx = pin.stackedOn.stackedUnder.indexOf(pin);
+                        if(pinIdx != -1){
+                            pin.stackedOn.stackedUnder.splice(pinIdx, 1);
+                        }
+                    }
+                    pin.stackedOn = undefined;
+                },
+
                 pinned: function(pin, edge){
                     if(edge.scroll){
                         if(angular.isUndefined(this.stacked[edge.scroll])){
@@ -361,16 +383,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                             this.setStackTargets(pin, edge.scroll);
                         }
 
-                        var stackTarget = this.getStackTarget(pin, edge.scroll);
-                        pin.stackedOn = (stackTarget && stackTarget != pin) ? stackTarget : null;
-                        if(pin.stackedOn){
-                            if(angular.isUndefined(pin.stackedOn.stackedUnder)){
-                                pin.stackedOn.stackedUnder = [];
-                            }
-                            if(pin.stackedOn.stackedUnder.indexOf(pin) == -1){
-                                pin.stackedOn.stackedUnder.push(pin);
-                            }
-                        }
+                        this.assignStacked(pin, edge.scroll);
                     }
                 },
                 unpinned: function(pin, edge){
@@ -381,13 +394,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                         }
                     }
                     this.removeStackTarget(pin, edge.scroll);
-                    if(pin.stackedOn && pin.stackedOn.stackedUnder){
-                        var pinIdx = pin.stackedOn.stackedUnder.indexOf(pin);
-                        if(pinIdx != -1){
-                            pin.stackedOn.stackedUnder.splice(pinIdx, 1);
-                        }
-                    }
-                    pin.stackedOn = undefined;
+                    this.unassignStacked(pin, edge.scroll);
                 }
             };
         },
@@ -533,6 +540,14 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     var cTop = self.$element[0].offsetTop;
                     var nTop = cTop - scrollDistance;
 
+                    // ensure the stackedOn is set if there are stackTargets
+                    if(self.stack && !self.stackedOn && self.edge && self.edge.scroll && self.stackTargets[self.edge.scroll] && self.stackTargets[self.edge.scroll].length){
+                        self.stack.assignStacked(self, self.edge.scroll);
+                        if(self.overflow && self.stackedOn){
+                            self.passOverflow(self.overflow);
+                        }
+                    }
+
                     if(self.overflow){
                         //console.log('['+self.$element[0].innerHTML+'] HAS OVERFLOW ['+self.overflow.root.$element[0].innerHTML+'] @ '+self.overflow.amount+' / '+self.overflow.allowance);
                         
@@ -543,7 +558,6 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                             if(self.overflow.amount + offset > self.overflow.allowance){
                                 offset = self.overflow.allowance - self.overflow.amount;
                             }
-                            
                             nTop -= offset;
 
                             var myTop = nTop;
