@@ -455,8 +455,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
             this.stackAgainst = undefined;
             this.stackTargets = {};
 
-            this.allowance = undefined;
-            this.overflow = 0;
+            this.overflow = undefined;
 
             var origCss = {};
             var origCheckOffset;
@@ -482,10 +481,9 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
 
                 var bounds = self.$element[0].getBoundingClientRect();
                 var topPosition = bounds.top + self.$uiScrollpoint.getScrollOffset();
-                if(!self.overflow){
+                if(!self.overflow || !self.shouldOverflow() || !self.overflow.amount){
                     topPosition -= self.currentScrollDistance();
                 }
-                
 
                 return topPosition;
             };
@@ -535,6 +533,43 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     var cTop = self.$element[0].offsetTop;
                     var nTop = cTop - scrollDistance;
 
+                    if(self.overflow){
+                        //console.log('['+self.$element[0].innerHTML+'] HAS OVERFLOW ['+self.overflow.root.$element[0].innerHTML+'] @ '+self.overflow.amount+' / '+self.overflow.allowance);
+                        
+                        if(self.shouldOverflow()){
+                            var offset = -scrollDistance;
+
+                            // ensure overflow amount will not exceed allowance with this offset
+                            if(self.overflow.amount + offset > self.overflow.allowance){
+                                offset = self.overflow.allowance - self.overflow.amount;
+                            }
+                            
+                            nTop -= offset;
+
+                            var myTop = nTop;
+
+                            // make sure we stick to our target
+                            if(self.stackedOn){
+                                var targetTop = self.stackedOn.calculateTopPosition();
+                                var targetBottom = targetTop + self.stackedOn.$element[0].offsetHeight;
+
+                                if(myTop > targetBottom){
+                                    var diff = myTop - targetBottom;
+                                    myTop -= diff;
+                                    nTop -= diff;
+                                }
+                            }
+
+                            // overflow root can update the overflow amount
+                            if(self.overflow.root == self){
+                                self.overflow.amount += offset;
+                                if(self.overflow.amount < 0){
+                                    self.overflow.amount = 0;
+                                }
+                            }
+                        }
+                    }
+
                     if(cTop != nTop){
                         self.$element.css('top', nTop+'px');
                     }
@@ -543,12 +578,50 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     $timeout(function(){
                         self.calculateScrollAllowance();
                     });
-                    
                 }
             };
 
-            this.calculateScrollAllowance = function(){
+            this.shouldOverflow = function(){
+                return (self.overflow && self.stackedUnderGroup(self.overflow.root.stackGroup));
+            };
 
+            this.calculateScrollAllowance = function(){
+                var passOverflow = false;
+                if(!self.stackedUnder || !self.stackedUnder.length){
+                    // only bottom elements should give an allowance
+                    var bounds = self.$element[0].getBoundingClientRect();
+                    var targetHeight = self.$uiScrollpoint.getTargetHeight();
+                    var bottom = bounds.bottom + (self.overflow ? self.overflow.amount : 0);
+
+                    var allowance = (bottom > targetHeight) ? bottom - targetHeight : 0;
+
+                    if(allowance && (angular.isUndefined(self.overflow) || self.overflow.allowance != allowance)){
+                        if(angular.isUndefined(self.overflow)){
+                            self.overflow = { root: self, amount: 0 };
+                            passOverflow = true;
+                        }
+                        self.overflow.allowance = allowance;
+                    }
+                }
+                if(passOverflow){
+                    self.passOverflow(self.overflow);
+                }
+            };
+            this.passOverflow = function(overflow){
+                if(self.edge){
+                    var stackTop = self.stack.getStackTop(self, self.edge.scroll);
+                    if(stackTop && stackTop != self){
+                        stackTop.setOverflow(overflow);
+                    }
+                }
+            };
+            this.setOverflow = function(overflow){
+                self.overflow = overflow;
+                if(self.stackedUnder){
+                    for(var i=0; i < self.stackedUnder.length; i++){
+                        self.stackedUnder[i].setOverflow(overflow);
+                    }
+                }
             };
 
             this.setAttrs = function(attrs){
@@ -697,7 +770,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
 //                    this.$uiScrollpoint.$target.on('resize', self.calculateScrollAllowance);
                     $timeout(function(){
                         self.calculateScrollAllowance();
-                    });
+                    }, 1);
 
                     // notify the Pin service that it is pinned
                     Pin.pinned(this, this.edge, distance);
@@ -711,8 +784,10 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     lastScrollOffset = undefined;
 
 //                    this.$uiScrollpoint.$target.off('resize', self.calculateScrollAllowance);
-                    this.allowance = undefined;
-                    this.overflow = 0;
+                    if(this.overflow){
+                        this.passOverflow(undefined);
+                    }
+                    this.overflow = undefined;
                     
                     // reset element to unpinned state
                     this.$element.removeClass('pinned');
@@ -784,7 +859,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     
                     if(stackTarget){
                         scrollOffset = stackTarget.calculateTopPosition() + (!scroll_bottom ? stackTarget.$element[0].offsetHeight : 0);
-                        
+
                         if(this.hasTarget){
                             scrollOffset = stackTarget.$element[0].offsetTop + (!scroll_bottom ? stackTarget.$element[0].offsetHeight : 0);
                             scrollOffset += (this.getScrollOffset() - this.$target[0].offsetTop);
