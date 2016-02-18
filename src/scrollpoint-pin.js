@@ -570,11 +570,14 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                                 if(self.overflowUnstuck){
                                     self.overflowUnstuck = undefined;
                                 }
-
+                                var scroll_bottom = (self.edge && self.edge.scroll == 'bottom');
                                 var offset = -scrollDistance;
 
                                 // ensure overflow amount will not exceed allowance with this offset
-                                if(self.overflow.amount + offset > self.overflow.allowance){
+                                if(!scroll_bottom && (self.overflow.amount + offset) > self.overflow.allowance){
+                                    offset = self.overflow.allowance - self.overflow.amount;
+                                }
+                                else if(scroll_bottom && (self.overflow.amount + offset) < self.overflow.allowance){
                                     offset = self.overflow.allowance - self.overflow.amount;
                                 }
                                 nTop -= offset;
@@ -584,7 +587,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                                 // overflow root updates the overflow amount
                                 if(self.overflow.root == self){
                                     self.overflow.amount += offset;
-                                    if(self.overflow.amount < 0){
+                                    if((!scroll_bottom && self.overflow.amount < 0) || (scroll_bottom && self.overflow.amount > 0)){
                                         self.overflow.amount = 0;
                                     }
                                 }
@@ -594,16 +597,38 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
 
                     if(!topSet){
                         // make sure it sticks to its target
-                        if(self.stackedOn && !self.overflowStick){
-                            // TODO: check with edge.shift
-                            var myTop = nTop;
-                            var targetTop = self.stackedOn.calculateTopPosition();
-                            var targetBottom = targetTop + self.stackedOn.$element[0].offsetHeight;
-                            if(myTop > targetBottom){
-                                var diff = myTop - targetBottom;
+                        if(!self.overflowStick){
+                            var scroll_bottom = (self.edge && self.edge.scroll == 'bottom');
+                            var edge = self.getCurrentEdge();
+                            var myTop = nTop + (edge ? edge.shift : 0);
+                            var myBottom = myTop + self.$element[0].offsetHeight;
+                            var targetTop;
+                            var targetBottom;
+
+                            if(self.stackedOn){
+                                targetTop = self.stackedOn.calculateTopPosition();
+                                targetBottom = targetTop + self.stackedOn.$element[0].offsetHeight;
+                            }
+                            else if(!scroll_bottom){
+                                targetTop = 0;
+                                targetBottom = self.$uiScrollpoint.getScrollOffset();
+                            }
+                            else if(scroll_bottom){
+                                targetTop = self.$uiScrollpoint.getScrollOffset() + self.$uiScrollpoint.getTargetHeight();
+                                targetBottom = 0;
+                            }
+
+                            var diff = 0;
+                            if(!scroll_bottom && myTop > targetBottom){
+                                diff = myTop - targetBottom;
+                            }
+                            else if(scroll_bottom && myBottom < targetTop){
+                                diff = myBottom - targetTop;
+                            }
+                            if(diff){
                                 myTop -= diff;
                                 nTop -= diff;
-                            }
+                            }                            
                         }
 
                         // assign the new top
@@ -741,13 +766,21 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
 
             this.calculateScrollAllowance = function(){
                 var passOverflow = false;
+                // only elements with nothing under them (ie. bottom of stack) should give an allowance
                 if(!self.stackedUnder || !self.stackedUnder.length){
-                    // only bottom elements should give an allowance
                     var bounds = self.$element[0].getBoundingClientRect();
                     var targetHeight = self.$uiScrollpoint.getTargetHeight();
+                    var top = bounds.top + (self.overflow ? self.overflow.amount : 0);
                     var bottom = bounds.bottom + (self.overflow ? self.overflow.amount : 0);
 
-                    var allowance = (bottom > targetHeight) ? bottom - targetHeight : 0;
+                    var allowance = 0;
+
+                    if(self.edge && self.edge.scroll == 'top' && bottom > targetHeight){
+                        allowance = bottom - targetHeight;
+                    }
+                    else if(self.edge && self.edge.scroll == 'bottom' && top < 0){
+                        allowance = top;
+                    }
 
                     if(allowance && (angular.isUndefined(self.overflow) || self.overflow.allowance != allowance)){
                         if(angular.isUndefined(self.overflow)){
