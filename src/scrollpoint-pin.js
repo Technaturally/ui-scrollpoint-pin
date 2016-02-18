@@ -594,7 +594,6 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
 
                                 // make sure it sticks to its target
                                 if(!self.overflowStick){
-                                    var scroll_bottom = (self.edge && self.edge.scroll == 'bottom');
                                     var edge = self.getCurrentEdge();
                                     var myTop = nTop + (edge ? edge.shift : 0);
                                     var myBottom = myTop + self.$element[0].offsetHeight;
@@ -861,9 +860,10 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                 return false;
             };
             this.stackGroupMatches = function(stackGroup, exclusive){
+                var i;
                 if(stackGroup && this.stackGroup){
                     // does it match stackGroup
-                    for(var i=0; i < this.stackGroup.length; i++){
+                    for(i=0; i < this.stackGroup.length; i++){
                         if(stackGroup.indexOf(this.stackGroup[i]) != -1){
                             return true;
                         }
@@ -876,7 +876,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
 
                 // didn't match the stackGroup, check if it should stackAgainst it
                 if(this.stackAgainst && !exclusive){
-                    for(var i=0; i < this.stackAgainst.length; i++){
+                    for(i=0; i < this.stackAgainst.length; i++){
                         if(this.stackAgainst[i] == '*' || (stackGroup && stackGroup.indexOf(this.stackAgainst[i]) != -1)){
                             return true;
                         }
