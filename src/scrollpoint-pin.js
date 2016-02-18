@@ -591,46 +591,46 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                                         self.overflow.amount = 0;
                                     }
                                 }
+
+                                // make sure it sticks to its target
+                                if(!self.overflowStick){
+                                    var scroll_bottom = (self.edge && self.edge.scroll == 'bottom');
+                                    var edge = self.getCurrentEdge();
+                                    var myTop = nTop + (edge ? edge.shift : 0);
+                                    var myBottom = myTop + self.$element[0].offsetHeight;
+                                    var targetTop;
+                                    var targetBottom;
+
+                                    if(self.stackedOn){
+                                        targetTop = self.stackedOn.calculateTopPosition();
+                                        targetBottom = targetTop + self.stackedOn.$element[0].offsetHeight;
+                                    }
+                                    else if(!scroll_bottom){
+                                        targetTop = 0;
+                                        targetBottom = self.$uiScrollpoint.getScrollOffset();
+                                    }
+                                    else if(scroll_bottom){
+                                        targetTop = self.$uiScrollpoint.getScrollOffset() + self.$uiScrollpoint.getTargetHeight();
+                                        targetBottom = 0;
+                                    }
+
+                                    var diff = 0;
+                                    if(!scroll_bottom && myTop > targetBottom){
+                                        diff = myTop - targetBottom;
+                                    }
+                                    else if(scroll_bottom && myBottom < targetTop){
+                                        diff = myBottom - targetTop;
+                                    }
+                                    if(diff){
+                                        myTop -= diff;
+                                        nTop -= diff;
+                                    }
+                                }
                             }
                         }
                     }
 
                     if(!topSet){
-                        // make sure it sticks to its target
-                        if(!self.overflowStick){
-                            var scroll_bottom = (self.edge && self.edge.scroll == 'bottom');
-                            var edge = self.getCurrentEdge();
-                            var myTop = nTop + (edge ? edge.shift : 0);
-                            var myBottom = myTop + self.$element[0].offsetHeight;
-                            var targetTop;
-                            var targetBottom;
-
-                            if(self.stackedOn){
-                                targetTop = self.stackedOn.calculateTopPosition();
-                                targetBottom = targetTop + self.stackedOn.$element[0].offsetHeight;
-                            }
-                            else if(!scroll_bottom){
-                                targetTop = 0;
-                                targetBottom = self.$uiScrollpoint.getScrollOffset();
-                            }
-                            else if(scroll_bottom){
-                                targetTop = self.$uiScrollpoint.getScrollOffset() + self.$uiScrollpoint.getTargetHeight();
-                                targetBottom = 0;
-                            }
-
-                            var diff = 0;
-                            if(!scroll_bottom && myTop > targetBottom){
-                                diff = myTop - targetBottom;
-                            }
-                            else if(scroll_bottom && myBottom < targetTop){
-                                diff = myBottom - targetTop;
-                            }
-                            if(diff){
-                                myTop -= diff;
-                                nTop -= diff;
-                            }                            
-                        }
-
                         // assign the new top
                         if(cTop != nTop){
                             self.$element.css('top', nTop+'px');
