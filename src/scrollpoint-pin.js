@@ -463,6 +463,9 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
             this.stackTargets = {};
 
             this.overflow = undefined;
+            this.overflowStick = false;
+            this.overflowUnstick = undefined;
+            this.overflowFreeze = false;
 
             var origCss = {};
             var origCheckOffset;
@@ -477,15 +480,6 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                 return 0;
             };
             this.calculateTopPosition = function(){
-                /**
-                var topPosition = self.$element[0].offsetTop;
-                var distance = self.currentScrollDistance();
-                if(distance){
-                    topPosition -= distance;
-                }
-                return topPosition;
-                */
-
                 var bounds = self.$element[0].getBoundingClientRect();
                 var topPosition = bounds.top + self.$uiScrollpoint.getScrollOffset();
                 if(!self.overflow || !self.shouldOverflow() || !self.overflow.amount){
@@ -495,13 +489,19 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                 return topPosition;
             };
 
+            this.getCurrentEdge = function(){
+                if(self.edge){
+                    return self.$uiScrollpoint.getEdge(self.edge.scroll, self.edge.element);
+                }
+            };
+
             this.recalibratePosition = function(){
                 self.$uiScrollpoint.$target.triggerHandler('scroll');
                 $timeout(function(){
                     if(self.edge && self.$placeholder){
                         var scroll_edge = self.edge.scroll;
                         var element_edge = self.edge.element;
-                        var edge = self.$uiScrollpoint.getEdge(scroll_edge, element_edge);
+                        var edge = self.getCurrentEdge();
                         var bounds = self.$element[0].getBoundingClientRect();
                         var top = bounds.top;
 
@@ -539,64 +539,204 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     var scrollDistance = self.currentScrollDistance();
                     var cTop = self.$element[0].offsetTop;
                     var nTop = cTop - scrollDistance;
+                    var topSet = false;
 
                     // ensure the stackedOn is set if there are stackTargets
                     if(self.stack && !self.stackedOn && self.edge && self.edge.scroll && self.stackTargets[self.edge.scroll] && self.stackTargets[self.edge.scroll].length){
                         self.stack.assignStacked(self, self.edge.scroll);
-                        if(self.overflow && self.stackedOn){
-                            self.passOverflow(self.overflow);
-                        }
+                    }
+                    // make sure stackedOn has the same overflow (overflows should always come from the bottom of the stack)
+                    if(self.overflow && self.stackedOn && self.stackedOn.overflow != self.overflow){
+                        // TODO: there could be need for a check to use the overflow with the highest allowance
+                        self.passOverflow(self.overflow);
                     }
 
                     if(self.overflow){
-                        //console.log('['+self.$element[0].innerHTML+'] HAS OVERFLOW ['+self.overflow.root.$element[0].innerHTML+'] @ '+self.overflow.amount+' / '+self.overflow.allowance);
-                        
-                        if(self.shouldOverflow()){
-                            var offset = -scrollDistance;
-
-                            // ensure overflow amount will not exceed allowance with this offset
-                            if(self.overflow.amount + offset > self.overflow.allowance){
-                                offset = self.overflow.allowance - self.overflow.amount;
+                        if(self.overflowStick){
+                            if(angular.isDefined(self.overflowUnstick)){
+                                self.unstickOverflow();
+                                self.overflowUnstuck = true;
+                                topSet = true;
                             }
-                            nTop -= offset;
-
-                            var myTop = nTop;
-
-                            // make sure we stick to our target
-                            if(self.stackedOn){
-                                var targetTop = self.stackedOn.calculateTopPosition();
-                                var targetBottom = targetTop + self.stackedOn.$element[0].offsetHeight;
-
-                                if(myTop > targetBottom){
-                                    var diff = myTop - targetBottom;
-                                    myTop -= diff;
-                                    nTop -= diff;
+                            else{
+                                self.shouldFreezeTarget();
+                            }
+                        }
+                        else if(self.shouldOverflow()){
+                            if(self.shouldStickOverflow() && !self.overflowUnstuck){
+                                topSet = true;
+                            }
+                            else{
+                                if(self.overflowUnstuck){
+                                    self.overflowUnstuck = undefined;
                                 }
-                            }
 
-                            // overflow root can update the overflow amount
-                            if(self.overflow.root == self){
-                                self.overflow.amount += offset;
-                                if(self.overflow.amount < 0){
-                                    self.overflow.amount = 0;
+                                var offset = -scrollDistance;
+
+                                // ensure overflow amount will not exceed allowance with this offset
+                                if(self.overflow.amount + offset > self.overflow.allowance){
+                                    offset = self.overflow.allowance - self.overflow.amount;
+                                }
+                                nTop -= offset;
+
+                                self.unfreezeTargets(offset);
+
+                                // overflow root updates the overflow amount
+                                if(self.overflow.root == self){
+                                    self.overflow.amount += offset;
+                                    if(self.overflow.amount < 0){
+                                        self.overflow.amount = 0;
+                                    }
                                 }
                             }
                         }
                     }
 
-                    if(cTop != nTop){
-                        self.$element.css('top', nTop+'px');
+                    if(!topSet){
+                        // make sure it sticks to its target
+                        if(self.stackedOn && !self.overflowStick){
+                            // TODO: check with edge.shift
+                            var myTop = nTop;
+                            var targetTop = self.stackedOn.calculateTopPosition();
+                            var targetBottom = targetTop + self.stackedOn.$element[0].offsetHeight;
+                            if(myTop > targetBottom){
+                                var diff = myTop - targetBottom;
+                                myTop -= diff;
+                                nTop -= diff;
+                            }
+                        }
+
+                        // assign the new top
+                        if(cTop != nTop){
+                            self.$element.css('top', nTop+'px');
+                        }
                     }
                     lastScrollOffset = self.$uiScrollpoint.getScrollOffset();
 
+                    // after everything is updated, check the overflow allowance
                     $timeout(function(){
                         self.calculateScrollAllowance();
                     });
                 }
             };
 
+            this.shouldStickOverflow = function(){
+                if(self.overflow && self.edge && !self.overflowStick && !self.stackGroupMatches(self.overflow.root.stackGroup, true)){
+                    if(self.stackTargets[self.edge.scroll]){
+                        var edge = self.getCurrentEdge();
+                        if(edge){
+                            var scrollDistance = self.currentScrollDistance();
+                            var top = self.calculateTopPosition() + edge.shift;
+                            var bottom = top + self.$element[0].offsetHeight;
+
+                            var stickOffset;
+                            var stickTo;
+                            for(var i=0; i < self.stackTargets[self.edge.scroll].length; i++){
+                                var checkTarget = self.stackTargets[self.edge.scroll][i];
+                                var targetTop = checkTarget.calculateTopPosition();
+                                var targetBottom = targetTop + checkTarget.$element[0].offsetHeight;
+                                var checkDiff = top - targetBottom;
+                                // TODO: for self.edge.scroll == 'bottom' check bottom vs checkTarget.top
+                                if(checkTarget != self.stackedOn && checkDiff < 0 && (angular.isUndefined(stickOffset) || checkDiff < stickOffset)){
+                                    stickTo = checkTarget;
+                                    stickOffset = checkDiff;
+                                }
+                            }
+
+                            if(stickOffset){
+                                self.stickOverflow(stickOffset);
+                                return true;
+                            }
+                        }
+                    }
+                }
+                if(self.overflowStick){
+                    self.overflowStick = false;
+                    this.overflowUnstick = undefined;
+                }
+                return false;
+            };
+
+            this.stickOverflow = function(offset){
+                self.overflowStick = true;
+                self.$element.css('top', (self.$element[0].offsetTop - offset)+'px');
+                if(self.stackedOn){
+                    self.stackedOn.freezeOverflow(offset);
+                }
+            };
+            this.unstickOverflow = function(){
+                if(self.overflowUnstick){
+                    self.$element.css('top', (self.$element[0].offsetTop - self.overflowUnstick.offset - self.currentScrollDistance())+'px');
+                    if(self.stackedOn.overflowFreeze){
+                        self.stackedOn.unfreezeOverflow(self.overflowUnstick.offset);
+                    }
+                    self.overflowStick = false;
+                    self.overflowUnstick = undefined;
+                }
+            };
+
+            this.shouldFreezeTarget = function(){
+                if(self.overflowStick && self.stackedOn && !self.stackedOn.overflowFreeze){
+                    var edge = self.getCurrentEdge();
+                    var top = self.calculateTopPosition() + edge.shift;
+                    var bottom = top + self.$element[0].offsetHeight;
+
+                    var targetTop = self.stackedOn.calculateTopPosition();
+                    var targetBottom = targetTop + self.stackedOn.$element[0].offsetHeight;
+                    var checkDiff = top - targetBottom;
+                    // TODO: for self.edge.scroll == 'bottom' check bottom vs checkTarget.top
+
+                    if(checkDiff < 0){
+                        self.stackedOn.freezeOverflow(-checkDiff);
+                    }
+                }
+
+            };
+
+            this.unfreezeTargets = function(offset){
+                if(self.edge && self.stackTargets && self.stackTargets[self.edge.scroll]){
+                    var edge = self.getCurrentEdge();
+                    var top = self.calculateTopPosition() + edge.shift;
+                    var bottom = top + self.$element[0].offsetHeight;
+                    for(var i=0; i < self.stackTargets[self.edge.scroll].length; i++){
+                        var checkTarget = self.stackTargets[self.edge.scroll][i];
+                        if(checkTarget.overflowFreeze){
+                            var targetTop = checkTarget.calculateTopPosition();
+                            var targetBottom = targetTop + checkTarget.$element[0].offsetHeight;
+                            var checkDiff = top - targetBottom;
+                            // TODO: for self.edge.scroll == 'bottom' check bottom vs checkTarget.top
+                            
+                            if(checkDiff < 0){
+                                checkTarget.unfreezeOverflow(-checkDiff);
+                            }
+                        }                        
+                    }
+                }
+            };
+            this.freezeOverflow = function(offset){
+                self.overflowFreeze = true;
+                self.$element.css('top', (self.$element[0].offsetTop - offset)+'px');
+                var parent = self;
+                while((parent = parent.stackedOn)){
+                    if(parent.shouldOverflow()){
+                        parent.freezeOverflow(offset);
+                    }
+                }
+            };
+            this.unfreezeOverflow = function(offset){
+                if(self.overflowFreeze){
+                    self.overflowFreeze = false;
+                    self.$element.css('top', (self.$element[0].offsetTop - offset)+'px');
+                }
+                var parent = self;
+                while((parent = parent.stackedOn)){
+                    parent.unfreezeOverflow(offset);
+                }
+            };
+
+
             this.shouldOverflow = function(){
-                return (self.overflow && self.stackedUnderGroup(self.overflow.root.stackGroup));
+                return (self.overflow && self.stackedUnderGroup(self.overflow.root.stackGroup) && !self.overflowStick && !self.overflowFreeze);
             };
 
             this.calculateScrollAllowance = function(){
@@ -631,6 +771,11 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
             };
             this.setOverflow = function(overflow){
                 self.overflow = overflow;
+                if(!overflow){
+                    self.overflowFreeze = false;
+                    self.overflowStick = false;
+                    this.overflowUnstick = undefined;
+                }
                 if(self.stackedUnder){
                     for(var i=0; i < self.stackedUnder.length; i++){
                         self.stackedUnder[i].setOverflow(overflow);
@@ -802,6 +947,9 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                         this.passOverflow(undefined);
                     }
                     this.overflow = undefined;
+                    this.overflowStick = false;
+                    this.overflowUnstick = undefined;
+                    this.overflowFreeze = false;
                     
                     // reset element to unpinned state
                     this.$element.removeClass('pinned');
@@ -877,6 +1025,22 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                         if(this.hasTarget){
                             scrollOffset = stackTarget.$element[0].offsetTop + (!scroll_bottom ? stackTarget.$element[0].offsetHeight : 0);
                             scrollOffset += (this.getScrollOffset() - this.$target[0].offsetTop);
+                        }
+
+                        if(stackTarget.overflowStick){
+                            var stickCheckOffset = self.calculateTopPosition();
+                            stickCheckOffset += edge.shift;
+                            if(elem_bottom){
+                                stickCheckOffset += self.$element[0].offsetHeight;
+                            }
+                            var stickOffset = (scrollOffset - stickCheckOffset);
+                            if((!scroll_bottom && stickOffset < 0) || (scroll_bottom && stickOffset > 0)){
+                                stackTarget.overflowUnstick = {
+                                    by: self,
+                                    offset: stickOffset
+                                };
+                            }
+                            return 0; // that will disable it from unpinning until target gets unstuck
                         }
                     }
                 }
