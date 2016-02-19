@@ -1,7 +1,7 @@
 /*!
  * angular-ui-scrollpoint-pin
  * https://github.com/TechNaturally/ui-scrollpoint-pin
- * Version: 2.1.0 - 2016-02-18T22:31:07.630Z
+ * Version: 2.1.0 - 2016-02-19T22:07:53.810Z
  * License: MIT
  */
 
@@ -455,7 +455,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
     };
     return Pin;
 }])
-.directive('uiScrollpointPin', ['ui.scrollpoint.Pin', '$timeout', '$interval', function(Pin, $timeout, $interval){
+.directive('uiScrollpointPin', ['ui.scrollpoint.Pin', '$timeout', '$window', function(Pin, $timeout, $window){
     return {
         restrict: 'A',
         priority: 100,
@@ -1223,6 +1223,14 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                 }, 2);
             }
             scope.$on('scrollpointShouldReset', reset);
+
+            function triggerReset(){
+                uiScrollpoint.reset();
+            }
+            angular.element($window).on('resize', triggerReset);
+            elm.on('$destroy', function(){
+                angular.element($window).off('resize', triggerReset);
+            });
         }
     };
 }]);
