@@ -13,7 +13,7 @@
     "tests"
   ],
   "dependencies": {
-    "angular-ui-scrollpoint": "~2.1.0"
+    "angular-ui-scrollpoint": "TechNaturally/ui-scrollpoint#tn-patches"
   },
   "devDependencies": {
     "angular-mocks": ">=1.0.5",
