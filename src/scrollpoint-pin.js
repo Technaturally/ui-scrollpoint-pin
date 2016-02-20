@@ -1215,6 +1215,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
             scope.$on('scrollpointShouldReset', reset);
 
             function triggerReset(){
+                uiScrollpointPin.unpin();
                 uiScrollpoint.reset();
             }
             angular.element($window).on('resize', triggerReset);

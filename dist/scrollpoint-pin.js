@@ -1,7 +1,7 @@
 /*!
  * angular-ui-scrollpoint-pin
  * https://github.com/TechNaturally/ui-scrollpoint-pin
- * Version: 2.1.0 - 2016-02-19T22:07:53.810Z
+ * Version: 2.1.0 - 2016-02-19T23:21:19.718Z
  * License: MIT
  */
 
@@ -1225,6 +1225,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
             scope.$on('scrollpointShouldReset', reset);
 
             function triggerReset(){
+                uiScrollpointPin.unpin();
                 uiScrollpoint.reset();
             }
             angular.element($window).on('resize', triggerReset);
