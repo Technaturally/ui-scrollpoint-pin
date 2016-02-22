@@ -613,7 +613,9 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                                 // make sure it sticks to its target
                                 if(!self.overflowStick){
                                     var edge = self.getCurrentEdge();
-                                    var myTop = nTop + (edge ? edge.shift : 0);
+
+                                    var cTopAbs = self.calculateTopPosition();
+                                    var myTop = cTopAbs - offset + (edge ? edge.shift : 0);
                                     var myBottom = myTop + self.$element[0].offsetHeight;
                                     var targetTop;
                                     var targetBottom;
