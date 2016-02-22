@@ -3,24 +3,12 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
     var Util = {
         hide: function(pin){
             if(pin.$element && pin.isPinned() && (!pin.group || pin != pin.group.active)){
-                if(angular.isFunction(pin.$element.hide)){
-                    pin.$element.hide();
-                }
-                else{
-                    //pin.$element.css('display', 'none');
-                    pin.$element.css('visibility', 'hidden');
-                }
+                pin.$element.css('visibility', 'hidden');
             }
         },
         show: function(pin){
             if(pin.$element){
-                if(angular.isFunction(pin.$element.show)){
-                    pin.$element.show();
-                }
-                else{
-                    //pin.$element.css('display', null);
-                    pin.$element.css('visibility', null);
-                }
+                pin.$element.css('visibility', '');
             }
         },
         getOffset: function(pin, scroll_edge){
@@ -238,6 +226,22 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
 
                         // assign the stack to the pin
                         pin.stack = this;
+
+                        // check if this item has any targets
+                        for(var edge in this.stacked){
+                            for(var i=0; i < this.stacked[edge].length; i++){
+                                var item = this.stacked[edge][i];
+                                if(this.shouldStack(pin, edge, item)){
+                                    if(angular.isUndefined(pin.stackTargets[edge])){
+                                        pin.stackTargets[edge] = [];
+                                    }
+                                    if(pin.stackTargets[edge].indexOf(item) == -1){
+                                        pin.stackTargets[edge].push(item);
+                                    }
+                                    pin.recalibratePosition();
+                                }
+                            }
+                        }
                     }
                 },
                 removeItem: function(pin){
@@ -245,6 +249,20 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     if(pinIdx != -1){
                         // remove the pin from items
                         this.items.splice(pinIdx, 1);
+
+                        // remove it as a stackTarget from any items
+                        for(var i=0; i < this.items.length; i++){
+                            var item = this.items[i];
+                            if(item && item.stackTargets){
+                                for(var edge in item.stackTargets){
+                                    var stackTargets = item.stackTargets[edge];
+                                    var targetIdx = stackTargets.indexOf(pin);
+                                    if(targetIdx != -1){
+                                        item.stackTargets[edge].splice(targetIdx, 1);
+                                    }
+                                }
+                            }
+                        }
 
                         // remove the pin from the stacked items
                         for(var edge in this.stacked){
@@ -1150,11 +1168,11 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     Pin.Groups.unregister(uiScrollpointPin, groupId);
                 }
                 else{
-                    if(angular.isUndefined(attrs.uiScrollpointPinOverlap)){
-                        Pin.Stack.register(uiScrollpointPin);
-                    }
                     if(groupId){
                         Pin.Groups.register(uiScrollpointPin, groupId);
+                    }
+                    if(angular.isUndefined(attrs.uiScrollpointPinOverlap)){
+                        Pin.Stack.register(uiScrollpointPin);
                     }
                 }
             });
