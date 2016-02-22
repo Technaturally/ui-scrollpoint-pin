@@ -887,7 +887,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                         }
                     }
                 }
-                else if(angular.isUndefined(this.stackGroup) && !exclusive){
+                else if(angular.isUndefined(this.stackGroup) && (!exclusive || angular.isUndefined(stackGroup))){
                     // no specific stack group - stack against anything
                     return true;
                 }
