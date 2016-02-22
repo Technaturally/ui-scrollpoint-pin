@@ -957,9 +957,13 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     // save the css properties that get modified by pinning functions
                     origCss.position = this.$element[0].style.position; //element.css('position');
                     origCss.top = this.$element[0].style.top; //element.css('top');
-                    origCss.left = this.$element[0].style.left; //element.css('left');
                     origCss.width = this.$element[0].style.width;
 
+                    var shiftHorizontal = (!this.$element[0].style.left && !this.$element[0].style.right);
+                    if(shiftHorizontal){
+                        // only track the left position if the element is not already positioned
+                        origCss.left = this.$element[0].style.left; //element.css('left');
+                    }
 
                     // lock the width at whatever it is before pinning (since absolute positioning could take it out of context)
                     this.$element.css('width', this.$element[0].offsetWidth+'px');
@@ -967,8 +971,11 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     // pin the element
                     this.$element.addClass('pinned');
                     this.$element.css('position', 'absolute');
-                    this.$element.css('left', pos.x+'px');
                     this.$element.css('top', pos.y+'px');
+
+                    if(shiftHorizontal){
+                        this.$element.css('left', pos.x+'px');
+                    }
 
                     // keep track of which edge
                     this.edge = {scroll: scroll_edge, element: elem_edge};
