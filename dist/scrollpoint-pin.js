@@ -1,7 +1,7 @@
 /*!
  * angular-ui-scrollpoint-pin
  * https://github.com/TechNaturally/ui-scrollpoint-pin
- * Version: 2.1.1 - 2016-02-23T00:09:38.965Z
+ * Version: 2.1.2 - 2016-02-23T01:21:48.186Z
  * License: MIT
  */
 
@@ -626,7 +626,6 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                                 // make sure it sticks to its target
                                 if(!self.overflowStick){
                                     var edge = self.getCurrentEdge();
-
                                     var cTopAbs = self.calculateTopPosition();
                                     var myTop = cTopAbs - offset + (edge ? edge.shift : 0);
                                     var myBottom = myTop + self.$element[0].offsetHeight;
@@ -1185,9 +1184,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                 scrollpointEnabled = scope.$eval(scrollpointEnabled);
                 if(!scrollpointEnabled){
                     uiScrollpointPin.unpin();
-
-                    Pin.Stack.unregister(uiScrollpointPin);
-                    Pin.Groups.unregister(uiScrollpointPin, groupId);
+                    unregisterPin();
                 }
                 else{
                     if(groupId){
@@ -1246,6 +1243,11 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                 }
             });
 
+            function unregisterPin(){
+                Pin.Stack.unregister(uiScrollpointPin);
+                Pin.Groups.unregister(uiScrollpointPin, groupId);
+            }
+
             function reset(){
                 uiScrollpointPin.unpin();
                 $timeout(function(){
@@ -1260,6 +1262,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
             }
             angular.element($window).on('resize', triggerReset);
             elm.on('$destroy', function(){
+                unregisterPin();
                 angular.element($window).off('resize', triggerReset);
             });
         }
