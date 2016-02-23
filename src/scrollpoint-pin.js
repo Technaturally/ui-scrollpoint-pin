@@ -250,11 +250,14 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                         // remove the pin from items
                         this.items.splice(pinIdx, 1);
 
+                        // edge is used in multiple for loops
+                        var edge;
+
                         // remove it as a stackTarget from any items
                         for(var i=0; i < this.items.length; i++){
                             var item = this.items[i];
                             if(item && item.stackTargets){
-                                for(var edge in item.stackTargets){
+                                for(edge in item.stackTargets){
                                     var stackTargets = item.stackTargets[edge];
                                     var targetIdx = stackTargets.indexOf(pin);
                                     if(targetIdx != -1){
@@ -265,7 +268,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                         }
 
                         // remove the pin from the stacked items
-                        for(var edge in this.stacked){
+                        for(edge in this.stacked){
                             var pinnedIdx = this.stacked[edge].indexOf(pin);
                             if(pinnedIdx != -1){
                                 this.stacked[edge].splice(pinnedIdx, 1);
