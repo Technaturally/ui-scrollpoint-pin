@@ -616,7 +616,6 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                                 // make sure it sticks to its target
                                 if(!self.overflowStick){
                                     var edge = self.getCurrentEdge();
-
                                     var cTopAbs = self.calculateTopPosition();
                                     var myTop = cTopAbs - offset + (edge ? edge.shift : 0);
                                     var myBottom = myTop + self.$element[0].offsetHeight;
@@ -1175,9 +1174,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                 scrollpointEnabled = scope.$eval(scrollpointEnabled);
                 if(!scrollpointEnabled){
                     uiScrollpointPin.unpin();
-
-                    Pin.Stack.unregister(uiScrollpointPin);
-                    Pin.Groups.unregister(uiScrollpointPin, groupId);
+                    unregisterPin();
                 }
                 else{
                     if(groupId){
@@ -1236,6 +1233,11 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                 }
             });
 
+            function unregisterPin(){
+                Pin.Stack.unregister(uiScrollpointPin);
+                Pin.Groups.unregister(uiScrollpointPin, groupId);
+            }
+
             function reset(){
                 uiScrollpointPin.unpin();
                 $timeout(function(){
@@ -1250,6 +1252,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
             }
             angular.element($window).on('resize', triggerReset);
             elm.on('$destroy', function(){
+                unregisterPin();
                 angular.element($window).off('resize', triggerReset);
             });
         }
