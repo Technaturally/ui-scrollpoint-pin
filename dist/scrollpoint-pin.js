@@ -1,7 +1,7 @@
 /*!
  * angular-ui-scrollpoint-pin
  * https://github.com/TechNaturally/ui-scrollpoint-pin
- * Version: 2.1.0 - 2016-02-18T22:31:07.630Z
+ * Version: 2.1.1 - 2016-02-23T00:09:38.965Z
  * License: MIT
  */
 
@@ -13,24 +13,12 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
     var Util = {
         hide: function(pin){
             if(pin.$element && pin.isPinned() && (!pin.group || pin != pin.group.active)){
-                if(angular.isFunction(pin.$element.hide)){
-                    pin.$element.hide();
-                }
-                else{
-                    //pin.$element.css('display', 'none');
-                    pin.$element.css('visibility', 'hidden');
-                }
+                pin.$element.css('visibility', 'hidden');
             }
         },
         show: function(pin){
             if(pin.$element){
-                if(angular.isFunction(pin.$element.show)){
-                    pin.$element.show();
-                }
-                else{
-                    //pin.$element.css('display', null);
-                    pin.$element.css('visibility', null);
-                }
+                pin.$element.css('visibility', '');
             }
         },
         getOffset: function(pin, scroll_edge){
@@ -248,6 +236,22 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
 
                         // assign the stack to the pin
                         pin.stack = this;
+
+                        // check if this item has any targets
+                        for(var edge in this.stacked){
+                            for(var i=0; i < this.stacked[edge].length; i++){
+                                var item = this.stacked[edge][i];
+                                if(this.shouldStack(pin, edge, item)){
+                                    if(angular.isUndefined(pin.stackTargets[edge])){
+                                        pin.stackTargets[edge] = [];
+                                    }
+                                    if(pin.stackTargets[edge].indexOf(item) == -1){
+                                        pin.stackTargets[edge].push(item);
+                                    }
+                                    pin.recalibratePosition();
+                                }
+                            }
+                        }
                     }
                 },
                 removeItem: function(pin){
@@ -256,8 +260,25 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                         // remove the pin from items
                         this.items.splice(pinIdx, 1);
 
+                        // edge is used in multiple for loops
+                        var edge;
+
+                        // remove it as a stackTarget from any items
+                        for(var i=0; i < this.items.length; i++){
+                            var item = this.items[i];
+                            if(item && item.stackTargets){
+                                for(edge in item.stackTargets){
+                                    var stackTargets = item.stackTargets[edge];
+                                    var targetIdx = stackTargets.indexOf(pin);
+                                    if(targetIdx != -1){
+                                        item.stackTargets[edge].splice(targetIdx, 1);
+                                    }
+                                }
+                            }
+                        }
+
                         // remove the pin from the stacked items
-                        for(var edge in this.stacked){
+                        for(edge in this.stacked){
                             var pinnedIdx = this.stacked[edge].indexOf(pin);
                             if(pinnedIdx != -1){
                                 this.stacked[edge].splice(pinnedIdx, 1);
@@ -455,7 +476,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
     };
     return Pin;
 }])
-.directive('uiScrollpointPin', ['ui.scrollpoint.Pin', '$timeout', '$interval', function(Pin, $timeout, $interval){
+.directive('uiScrollpointPin', ['ui.scrollpoint.Pin', '$timeout', '$window', function(Pin, $timeout, $window){
     return {
         restrict: 'A',
         priority: 100,
@@ -605,7 +626,9 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                                 // make sure it sticks to its target
                                 if(!self.overflowStick){
                                     var edge = self.getCurrentEdge();
-                                    var myTop = nTop + (edge ? edge.shift : 0);
+
+                                    var cTopAbs = self.calculateTopPosition();
+                                    var myTop = cTopAbs - offset + (edge ? edge.shift : 0);
                                     var myBottom = myTop + self.$element[0].offsetHeight;
                                     var targetTop;
                                     var targetBottom;
@@ -879,7 +902,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                         }
                     }
                 }
-                else if(angular.isUndefined(this.stackGroup) && !exclusive){
+                else if(angular.isUndefined(this.stackGroup) && (!exclusive || angular.isUndefined(stackGroup))){
                     // no specific stack group - stack against anything
                     return true;
                 }
@@ -949,9 +972,13 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     // save the css properties that get modified by pinning functions
                     origCss.position = this.$element[0].style.position; //element.css('position');
                     origCss.top = this.$element[0].style.top; //element.css('top');
-                    origCss.left = this.$element[0].style.left; //element.css('left');
                     origCss.width = this.$element[0].style.width;
 
+                    var shiftHorizontal = (!this.$element[0].style.left && !this.$element[0].style.right);
+                    if(shiftHorizontal){
+                        // only track the left position if the element is not already positioned
+                        origCss.left = this.$element[0].style.left; //element.css('left');
+                    }
 
                     // lock the width at whatever it is before pinning (since absolute positioning could take it out of context)
                     this.$element.css('width', this.$element[0].offsetWidth+'px');
@@ -959,8 +986,11 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     // pin the element
                     this.$element.addClass('pinned');
                     this.$element.css('position', 'absolute');
-                    this.$element.css('left', pos.x+'px');
                     this.$element.css('top', pos.y+'px');
+
+                    if(shiftHorizontal){
+                        this.$element.css('left', pos.x+'px');
+                    }
 
                     // keep track of which edge
                     this.edge = {scroll: scroll_edge, element: elem_edge};
@@ -1160,11 +1190,11 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     Pin.Groups.unregister(uiScrollpointPin, groupId);
                 }
                 else{
-                    if(angular.isUndefined(attrs.uiScrollpointPinOverlap)){
-                        Pin.Stack.register(uiScrollpointPin);
-                    }
                     if(groupId){
                         Pin.Groups.register(uiScrollpointPin, groupId);
+                    }
+                    if(angular.isUndefined(attrs.uiScrollpointPinOverlap)){
+                        Pin.Stack.register(uiScrollpointPin);
                     }
                 }
             });
@@ -1223,6 +1253,15 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                 }, 2);
             }
             scope.$on('scrollpointShouldReset', reset);
+
+            function triggerReset(){
+                uiScrollpointPin.unpin();
+                uiScrollpoint.reset();
+            }
+            angular.element($window).on('resize', triggerReset);
+            elm.on('$destroy', function(){
+                angular.element($window).off('resize', triggerReset);
+            });
         }
     };
 }]);
