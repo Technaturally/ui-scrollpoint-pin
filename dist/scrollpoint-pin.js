@@ -1,7 +1,7 @@
 /*!
  * angular-ui-scrollpoint-pin
  * https://github.com/TechNaturally/ui-scrollpoint-pin
- * Version: 2.1.4 - 2016-02-24T19:23:42.293Z
+ * Version: 2.1.5 - 2016-02-24T20:15:54.556Z
  * License: MIT
  */
 
@@ -1146,7 +1146,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
             });
 
             // default behaviour is to stack - use ui-scrollpoint-pin-overlap="true" to disable stacking
-            if(angular.isUndefined(attrs.uiScrollpointPinOverlap)){
+            if(uiScrollpoint.enabled && angular.isUndefined(attrs.uiScrollpointPinOverlap)){
                 Pin.Stack.register(uiScrollpointPin);
             }
             attrs.$observe('uiScrollpointPinOverlap', function(uiScrollpointPinOverlap){
@@ -1159,7 +1159,9 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
 
                 if(!uiScrollpointPinOverlap){
                     // register to stack if it is not overlapping
-                    Pin.Stack.register(uiScrollpointPin);
+                    if(uiScrollpoint.enabled){
+                        Pin.Stack.register(uiScrollpointPin);
+                    }
                     elm.removeClass('pin-overlap');
                 }
                 else{
@@ -1176,7 +1178,9 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
 
                 // on next digest cycle, register on whatever its new stack should be
                 $timeout(function(){
-                    Pin.Stack.register(uiScrollpointPin);
+                    if(uiScrollpoint.enabled){
+                        Pin.Stack.register(uiScrollpointPin);
+                    }
                 });
             });
 
@@ -1215,7 +1219,9 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                         Pin.Groups.unregister(uiScrollpointPin, groupId);
                     }
                     groupId = pinGroup.replace(/[^a-zA-Z0-9-]/g, '-');
-                    Pin.Groups.register(uiScrollpointPin, groupId);
+                    if(uiScrollpoint.enabled){
+                        Pin.Groups.register(uiScrollpointPin, groupId);
+                    }
                 }
                 else{
                     Pin.Groups.unregister(uiScrollpointPin, groupId);
