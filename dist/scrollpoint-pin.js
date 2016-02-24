@@ -1,7 +1,7 @@
 /*!
  * angular-ui-scrollpoint-pin
  * https://github.com/TechNaturally/ui-scrollpoint-pin
- * Version: 2.1.2 - 2016-02-23T01:21:48.186Z
+ * Version: 2.1.3 - 2016-02-24T04:14:41.570Z
  * License: MIT
  */
 
@@ -1129,6 +1129,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
             var uiScrollpoint = Ctrl[0];
             var uiScrollpointPin = Ctrl[1];
 
+            var ctrlName;
             var groupId;
             var stackId;
 
@@ -1193,6 +1194,17 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     if(angular.isUndefined(attrs.uiScrollpointPinOverlap)){
                         Pin.Stack.register(uiScrollpointPin);
                     }
+                }
+            });
+
+            // ui-scrollpoint-pin-as attribute
+            attrs.$observe('uiScrollpointPinAs', function(pinAs){
+                if(angular.isDefined(ctrlName) && angular.isDefined(scope[ctrlName])){
+                    scope[ctrlName] = undefined;
+                }
+                if(pinAs && uiScrollpointPin){
+                    ctrlName = pinAs;
+                    scope[pinAs] = uiScrollpointPin;
                 }
             });
 
