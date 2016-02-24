@@ -1,7 +1,7 @@
 /*!
  * angular-ui-scrollpoint-pin
  * https://github.com/TechNaturally/ui-scrollpoint-pin
- * Version: 2.1.3 - 2016-02-24T04:14:41.570Z
+ * Version: 2.1.4 - 2016-02-24T19:23:42.293Z
  * License: MIT
  */
 
@@ -294,7 +294,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                 shouldStack: function(pin, edge, against){
                     if(pin && against.isPinned() && pin != against && pin.stackGroupMatches(against.stackGroup)){
                         if(against.group){
-                            against = against.group.getFirst(edge);
+                            against = against.group.getActive(edge);
                         }
                         var bounds = against.getOriginalBounds();
                         var pinBounds = pin.getOriginalBounds();
@@ -302,7 +302,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                             if(pin.group){
                                 // don't stack it against members of its own group
                                 if(!against.group || pin.group.id != against.group.id){
-                                    // stack the first member of a group
+                                    // stack the group member, if it is the first item or if the first item would stack against
                                     var firstInGroup = pin.group.getFirst(edge);
                                     if(pin == firstInGroup || this.shouldStack(firstInGroup, edge, against)){
                                         return true;
@@ -464,12 +464,12 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
 
     var Pin = {
         pinned: function(pin, edge){
-            Pin.Stack.pinned(pin, edge);
             Pin.Groups.pinned(pin, edge);
+            Pin.Stack.pinned(pin, edge);
         },
         unpinned: function(pin, edge){
-            Pin.Stack.unpinned(pin, edge);
             Pin.Groups.unpinned(pin, edge);
+            Pin.Stack.unpinned(pin, edge);
         },
         Groups: Groups,
         Stack: Stack
@@ -826,7 +826,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                 }
             };
             this.passOverflow = function(overflow){
-                if(self.edge){
+                if(self.edge && self.stack){
                     var stackTop = self.stack.getStackTop(self, self.edge.scroll);
                     if(stackTop && stackTop != self){
                         stackTop.setOverflow(overflow);
@@ -1273,10 +1273,13 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                 uiScrollpoint.reset();
             }
             angular.element($window).on('resize', triggerReset);
-            elm.on('$destroy', function(){
+            
+            function destroyed(){
                 unregisterPin();
                 angular.element($window).off('resize', triggerReset);
-            });
+            }
+            scope.$on('$destroy', destroyed);
+            elm.on('$destroy', destroyed);
         }
     };
 }]);
