@@ -1119,6 +1119,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
             var uiScrollpoint = Ctrl[0];
             var uiScrollpointPin = Ctrl[1];
 
+            var ctrlName;
             var groupId;
             var stackId;
 
@@ -1183,6 +1184,17 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     if(angular.isUndefined(attrs.uiScrollpointPinOverlap)){
                         Pin.Stack.register(uiScrollpointPin);
                     }
+                }
+            });
+
+            // ui-scrollpoint-pin-as attribute
+            attrs.$observe('uiScrollpointPinAs', function(pinAs){
+                if(angular.isDefined(ctrlName) && angular.isDefined(scope[ctrlName])){
+                    scope[ctrlName] = undefined;
+                }
+                if(pinAs && uiScrollpointPin){
+                    ctrlName = pinAs;
+                    scope[pinAs] = uiScrollpointPin;
                 }
             });
 
