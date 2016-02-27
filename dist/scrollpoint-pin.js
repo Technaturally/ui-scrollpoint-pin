@@ -1,7 +1,7 @@
 /*!
  * angular-ui-scrollpoint-pin
  * https://github.com/TechNaturally/ui-scrollpoint-pin
- * Version: 2.1.7 - 2016-02-27T08:58:39.970Z
+ * Version: 2.1.8 - 2016-02-27T10:57:24.767Z
  * License: MIT
  */
 
@@ -525,10 +525,9 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
             this.calculateTopPosition = function(){
                 var bounds = self.$element[0].getBoundingClientRect();
                 var topPosition = bounds.top + self.$uiScrollpoint.getScrollOffset();
-                if(!self.overflow || !self.shouldOverflow() || !self.overflow.amount){
+                if(!isFixed(self.$element) && (!self.overflow || !self.shouldOverflow() || !self.overflow.amount)){
                     topPosition -= self.currentScrollDistance();
                 }
-
                 return topPosition;
             };
 
@@ -539,42 +538,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
             };
 
             this.recalibratePosition = function(){
-                self.$uiScrollpoint.$target.triggerHandler('scroll');
-                $timeout(function(){
-                    if(self.edge && self.$placeholder){
-                        var scroll_edge = self.edge.scroll;
-                        var element_edge = self.edge.element;
-                        var edge = self.getCurrentEdge();
-                        var bounds = self.$element[0].getBoundingClientRect();
-                        var top = bounds.top;
-
-                        var stackTarget = self.stack ? self.stack.getStackTarget(self, scroll_edge) : undefined;
-                        if(stackTarget){
-                            var stBounds = stackTarget.$element[0].getBoundingClientRect();
-                            var stOffset = stBounds.top;
-                            if(scroll_edge != 'bottom'){
-                                stOffset += stackTarget.$element[0].offsetHeight;
-                            }
-                            else {
-                                stOffset -= self.$element[0].offsetHeight;
-                            }
-                            if(edge.shift){
-                                stOffset -= edge.shift;
-                            }
-                            top = stOffset;
-                        }
-
-                        if(bounds.top != top){
-                            var topDiff = top - bounds.top;
-
-                            self.$element.css('top', (self.$element[0].offsetTop + topDiff)+'px');
-
-                            if(self.stack){
-                                self.stack.recalibrateStacked(self, scroll_edge);
-                            }
-                        }
-                    }
-                });
+                self.stickToTargetCheck();
             };
 
             this.stickToTargetCheck = function(){
@@ -635,10 +599,13 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     var topSet = false;
 
                     // ensure the stackedOn is set if there are stackTargets
-                    var stTarget = self.stack.getStackTarget(self, self.edge.scroll);
-                    if(self.stack && (!self.stackedOn || self.stackedOn != stTarget) && self.edge && self.edge.scroll && self.stackTargets[self.edge.scroll] && self.stackTargets[self.edge.scroll].length){
-                        self.stack.assignStacked(self, self.edge.scroll, stTarget);
+                    if(self.stack){
+                        var stTarget = self.stack.getStackTarget(self, self.edge.scroll);
+                        if((!self.stackedOn || self.stackedOn != stTarget) && self.edge && self.edge.scroll && self.stackTargets[self.edge.scroll] && self.stackTargets[self.edge.scroll].length){
+                            self.stack.assignStacked(self, self.edge.scroll, stTarget);
+                        }
                     }
+                    
                     // make sure stackedOn has the same overflow (overflows should always come from the bottom of the stack)
                     if(self.overflow && self.stackedOn && self.stackedOn.overflow != self.overflow){
                         // TODO: there could be need for a check to use the overflow with the highest allowance
@@ -1040,6 +1007,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
 
                     // notify the Pin service that it is pinned
                     Pin.pinned(this, this.edge, distance);
+                    this.stickToTargetCheck();
                 }
             };
 
