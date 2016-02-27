@@ -607,6 +607,14 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                 }
             };
 
+            function isFixed(element){
+                if(element && angular.isDefined(element[0])){
+                    var style = $window.getComputedStyle(element[0]);
+                    return (style && angular.isDefined(style.position) && style.position == 'fixed');
+                }
+                return false;
+            }
+
             this.repositionPinned = function(){
                 if(self.$placeholder && self.$uiScrollpoint && !self.$uiScrollpoint.hasTarget){
                     var scrollDistance = self.currentScrollDistance();
@@ -668,7 +676,7 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                         }
                     }
 
-                    if(!topSet){
+                    if(!topSet && !isFixed(self.$element)){
                         // assign the new top
                         if(cTop != nTop){
                             self.$element.css('top', nTop+'px');
