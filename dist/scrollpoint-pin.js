@@ -1,7 +1,7 @@
 /*!
  * angular-ui-scrollpoint-pin
  * https://github.com/TechNaturally/ui-scrollpoint-pin
- * Version: 2.1.6 - 2016-02-27T07:48:50.036Z
+ * Version: 2.1.7 - 2016-02-27T08:58:39.970Z
  * License: MIT
  */
 
@@ -390,8 +390,10 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     }
                 },
 
-                assignStacked: function(pin, scroll_edge){
-                    var stackTarget = this.getStackTarget(pin, scroll_edge);
+                assignStacked: function(pin, scroll_edge, stackTarget){
+                    if(angular.isUndefined(stackTarget)){
+                        stackTarget = this.getStackTarget(pin, scroll_edge);
+                    }
                     pin.stackedOn = (stackTarget && stackTarget != pin) ? stackTarget : null;
                     if(pin.stackedOn){
                         if(angular.isUndefined(pin.stackedOn.stackedUnder)){
@@ -633,8 +635,9 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     var topSet = false;
 
                     // ensure the stackedOn is set if there are stackTargets
-                    if(self.stack && !self.stackedOn && self.edge && self.edge.scroll && self.stackTargets[self.edge.scroll] && self.stackTargets[self.edge.scroll].length){
-                        self.stack.assignStacked(self, self.edge.scroll);
+                    var stTarget = self.stack.getStackTarget(self, self.edge.scroll);
+                    if(self.stack && (!self.stackedOn || self.stackedOn != stTarget) && self.edge && self.edge.scroll && self.stackTargets[self.edge.scroll] && self.stackTargets[self.edge.scroll].length){
+                        self.stack.assignStacked(self, self.edge.scroll, stTarget);
                     }
                     // make sure stackedOn has the same overflow (overflows should always come from the bottom of the stack)
                     if(self.overflow && self.stackedOn && self.stackedOn.overflow != self.overflow){
