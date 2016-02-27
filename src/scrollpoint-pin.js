@@ -668,9 +668,6 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                         }
                     }
 
-                    // make sure it sticks to its target
-                    $timeout(self.stickToTargetCheck);
-
                     if(!topSet){
                         // assign the new top
                         if(cTop != nTop){
@@ -679,8 +676,15 @@ angular.module('ui.scrollpoint.pin', ['ui.scrollpoint'])
                     }
                     lastScrollOffset = self.$uiScrollpoint.getScrollOffset();
 
-                    // after everything is updated, check the overflow allowance
+                    // make sure it sticks to its target
+                    self.stickToTargetCheck();
+
+                    // after everything is updated (ie. all scroll handlers fired)
                     $timeout(function(){
+                        // double check it still sticks to its target
+                        self.stickToTargetCheck();
+
+                        // check the overflow allowance
                         self.calculateScrollAllowance();
                     });
                 }
